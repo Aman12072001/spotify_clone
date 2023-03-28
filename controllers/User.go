@@ -87,9 +87,9 @@ func GetSong(w http.ResponseWriter,r * http.Request){
 
 		//return the path for the frontend dev
 
-	song.Path="192.180.7.255"+song.Path	
+	
 
-	fmt.Fprint(w,"hello bhaiya")
+	
 
 	json.NewEncoder(w).Encode(&song)
 

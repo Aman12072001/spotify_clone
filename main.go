@@ -5,7 +5,6 @@ import (
 	"main/routes"
 
 	"github.com/joho/godotenv"
-	server "main/server"
 )
 
 
@@ -18,7 +17,9 @@ func main(){
 
 		fmt.Println("could not load environment")
 	}
-    server.Server()
+	// fmt.Println("",os.Getenv("TWILIO_ACCOUNT_SID"))
+	
+ 
     routes.Routes()
 	
  

@@ -68,8 +68,8 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 		 fmt.Println(result.Error)
 		 return
 	 }
- fmt.Fprint(w,"Audio file saved to database")
-	 fmt.Println("Audio file saved to database")
+	fmt.Fprint(w,"Audio file saved to database")
+	fmt.Println("Audio file saved to database")
  
 
 }
