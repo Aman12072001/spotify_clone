@@ -28,8 +28,8 @@ func Routes(){
 
 
 	//USER AUTHENTICATION
-	mux.HandleFunc("/send_otp",cont.SendOTP)
-	mux.HandleFunc("/check_otp",cont.CheckOTP)
+	mux.HandleFunc("/verify_otp",cont.VerifyOtp)
+
 
 	log.Fatal(http.ListenAndServe(":8000", mux))
 

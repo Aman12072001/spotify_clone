@@ -2,14 +2,10 @@ package cont
 
 import (
 	"encoding/json"
-	"fmt"
 	"main/db"
 	"main/models"
 	"net/http"
 	"os"
-
-	"github.com/twilio/twilio-go"
-	api "github.com/twilio/twilio-go/rest/api/v2010"
 )
 
 
@@ -23,44 +19,25 @@ func User_login(w http.ResponseWriter,r *http.Request){
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	
+	//take the user name ,email and contact number
 
 	var user models.User
 
 	json.NewDecoder(r.Body).Decode(&user)
 
+	db.DB.Create(&user)
 
-	// Find your Account SID and Auth Token at twilio.com/console
-	// and set the environment variables. See http://twil.io/secure
-	accountSid := os.Getenv("TWILIO_ACCOUNT_SID")
-	authToken := os.Getenv("TWILIO_AUTH_TOKEN")
-
-
-	var client *twilio.RestClient = twilio.NewRestClientWithParams(twilio.ClientParams{
-		Username: accountSid,
-		Password: authToken,
-	})
-	
-
-	params := &api.CreateMessageParams{}
-	params.SetBody("This is the ship that made the Kessel Run in fourteen parsecs?")
-	// params.SetFrom("+15017122661")
-	params.SetTo(user.Contact_no)
-	
-
-	resp, err := client.Api.CreateMessage(params)
-	if err != nil {
-		fmt.Println(err.Error())
-	} else {
-		if resp.Sid != nil {
-			fmt.Println(*resp.Sid)
-		} else {
-			fmt.Println(resp.Sid)
-		}
-	}
-
+	//send otp according to the contact number entered
+	sendOtp("+91" + user.Contact_no)
+	//generate an Otp
 
 
 }
+
+
+
+
 
 func GetSong(w http.ResponseWriter,r * http.Request){
 
@@ -97,3 +74,5 @@ func GetSong(w http.ResponseWriter,r * http.Request){
 
 
 }
+
+func CreatePlaylist()

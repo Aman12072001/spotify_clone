@@ -3,6 +3,8 @@ package cont
 import (
 	"encoding/json"
 	"fmt"
+	"main/db"
+	"main/models"
 	con "main/utils"
 	"net/http"
 	"time"
@@ -26,6 +28,7 @@ func sendOtp(to string) {
 	resp, err := client.VerifyV2.CreateVerification(con.VERIFY_SERVICE_SID, params)
 
 	if err != nil {
+		fmt.Println("otp sent failed")
 		fmt.Println(err.Error())
 	} else {
 		fmt.Printf("Sent verification '%s'\n", *resp.Sid)
@@ -41,56 +44,104 @@ func checkOtp(to string, code string) bool {
 		fmt.Println("Error is :", err)
 		return false
 	} else if *resp.Status == "approved" {
-		return true
+
+	    return true
+
 	} else {
 		return false
 	}
 
-	// jwt authentication token
-	expirationTime := time.Now().Add(10 * time.Minute)
-	fmt.Println("expiration time is: ", expirationTime)
-
-	// check if the user is valid then only create token
-	claims := models.Claims{
-		Phone: phone,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-		},
-	}
-	fmt.Println("claims: ", claims)
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	fmt.Println("token: ", token)
-	tokenString, err := token.SignedString(cons.JwtKey)
-	if err != nil {
-		fmt.Println("error is :", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	// w.Write([]byte(fmt.Sprint("Token is:", tokenString)))
-}
-
-func SendOTP(w http.ResponseWriter, r *http.Request){
-
-	w.Header().Set("Content-Type", "application/json")
-	phNumber := r.URL.Query().Get("number")
-
-	sendOtp("+91" + phNumber)
-
-	w.Write([]byte("OTP sent successfully "))
 
 }
 
-func CheckOTP(w http.ResponseWriter, r *http.Request){
+func VerifyOtp(w http.ResponseWriter,r * http.Request){
+
 	w.Header().Set("Content-Type", "application/json")
-	//phNumber := r.URL.Query().Get("number")
 	var otp = make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&otp)
+
+	var user models.User
+	db.DB.Where("contact_no=?",otp["phone"]).First(&user)
 	if checkOtp("+91"+otp["phone"], otp["otp"]) {
 		w.Write([]byte("Phone Number verified sucessfully"))
 
+				// jwt authentication token
+				expirationTime := time.Now().Add(100 * time.Hour)
+				fmt.Println("expiration time is: ", expirationTime)
 		
+				// check if the user is valid then only create token
+				claims := models.Claims{
+					Phone: user.Contact_no,
+					RegisteredClaims: jwt.RegisteredClaims{
+						ExpiresAt: jwt.NewNumericDate(expirationTime),
+					},
+				}
+				fmt.Println("claims: ", claims)
+		
+				token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+				fmt.Println("token: ", token)
+				tokenString, err := token.SignedString((con.Jwt_key))
+				if err != nil {
+					fmt.Println("error is :", err)
+					w.WriteHeader(http.StatusInternalServerError)
+					
+				}
+				fmt.Println("tokenString",tokenString)
+				
+				
+		
+				//token parsing and verification
+		
+				parsedToken ,err := jwt.Parse(tokenString , func(token *jwt.Token) (interface{}, error) {
+					
+					if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+						return nil,fmt.Errorf("error")
+					}
+					return con.Jwt_key , nil
+				})
+
+				
+				if err != nil {
+					
+					fmt.Fprint(w, "Invalid or expired token")
+					fmt.Println("invalid token",err)
+				
+				}
+				//if the token is valid
+		
+				//give the token string to the user so that user can validate its identity in future requests
+				if parsedToken.Valid{
+					user.Token=tokenString
+				}else{
+					fmt.Fprintln(w,"\n token is not valid bhaiya ")
+				}
+				
+
+				db.DB.Where("contact_no=?",otp["phone"]).Updates(&user)
+				fmt.Println("token provided successfully")
 	} else {
 		w.Write([]byte("Verifictaion failed"))
 	}
+
+
+
+
 }
+
+// func SendOTP(w http.ResponseWriter, r *http.Request){
+
+// 	// we are giving phone number as input in params
+// 	//and user id 
+// 	w.Header().Set("Content-Type", "application/json")
+// 	phNumber := r.URL.Query().Get("number")
+// 	user_id:=r.URL.Query().Get("user_id")
+
+// 	var user models.User
+// 	db.DB.Where("user_id", user_id).First(&user)
+
+// 	sendOtp("+91" + phNumber)
+
+// 	w.Write([]byte("OTP sent successfully "))
+
+// }
+
