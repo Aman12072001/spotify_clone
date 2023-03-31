@@ -7,11 +7,61 @@ import (
 	"log"
 	"main/db"
 	"main/models"
+	con "main/utils"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/bogem/id3v2"
+	"github.com/golang-jwt/jwt/v4"
 )
+
+
+func Create_Admin(){
+
+
+	var admin models.User
+
+	admin.Role="admin"
+	admin.Name="aman-admin"
+	db.DB.Create(&admin)
+	
+}
+func GetToken(){
+
+	// jwt authentication token
+	expirationTime := time.Now().Add(100 * time.Hour)
+	fmt.Println("expiration time is: ", expirationTime)
+
+	// check if the user is valid then only create token
+
+	var user models.User
+	db.DB.Where("role=?", "admin").First(&user)
+	claims := models.Claims{
+
+		Role:user.Role,
+		User_id:user.User_id,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
+	}
+	// fmt.Println("claims: ", claims)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	fmt.Println("token: ", token)
+	tokenString, err := token.SignedString((con.Jwt_key))
+	if err != nil {
+		fmt.Println("error is :", err)
+		// w.WriteHeader(http.StatusInternalServerError)
+		
+	}
+	// fmt.Println("tokenString",tokenString)
+	user.Token=tokenString
+	db.DB.Where("role=?", "admin").Updates(&user)
+
+
+	
+}
 
 
 func Add_Song(w http.ResponseWriter,r *http.Request) {
@@ -48,6 +98,7 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 	audiofile.Path=pathh.Path
 
 	audiofile.Name=tag.Title()
+	audiofile.Artist=tag.Artist()
 	
 	
 	//calculate the size of the audiofile
@@ -72,4 +123,9 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 	fmt.Println("Audio file saved to database")
  
 
+}
+
+func Show_playlist(w http.ResponseWriter,r * http.Request){
+
+	//get playlist by userid and 
 }

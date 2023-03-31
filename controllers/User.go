@@ -2,10 +2,14 @@ package cont
 
 import (
 	"encoding/json"
+	"fmt"
 	"main/db"
 	"main/models"
+	con "main/utils"
 	"net/http"
 	"os"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 
@@ -64,15 +68,50 @@ func GetSong(w http.ResponseWriter,r * http.Request){
 
 		//return the path for the frontend dev
 
-	
-
-	
 
 	json.NewEncoder(w).Encode(&song)
 
+}
 
+func CreatePlaylist(w http.ResponseWriter,r * http.Request){
+
+
+	//custom playlist
+	//user want to add songs to his/her playlist
+
+	//it will take  playlist_name and path 
+	//user_id will be set from the token
+	w.Header().Set("Content-Type", "application/json")
+	var playlist models.Playlist
+
+
+	json.NewDecoder(r.Body).Decode(&playlist)
+
+	//extract the user_id from the token
+	fmt.Println("playlist var me value encode ho gyi")
+	fmt.Println("header token vlaue",r.Header["Token"][0])
+
+	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+						
+		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil,fmt.Errorf("error")
+		}
+		return con.Jwt_key , nil
+	})
+
+	fmt.Println("token parsing hogyi")
+
+	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+		fmt.Println("claims ki userid",claims)
+		playlist.User_id=claims.User_id
+	} else {
+		fmt.Println(err)
+	}
+
+	db.DB.Create(&playlist)
+
+	fmt.Fprint(w,"added to playlist")
 
 
 }
-
-func CreatePlaylist()

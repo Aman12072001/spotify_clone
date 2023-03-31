@@ -72,6 +72,7 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				// check if the user is valid then only create token
 				claims := models.Claims{
 					Phone: user.Contact_no,
+					User_id:user.User_id,
 					RegisteredClaims: jwt.RegisteredClaims{
 						ExpiresAt: jwt.NewNumericDate(expirationTime),
 					},
@@ -91,14 +92,19 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				
 		
 				//token parsing and verification
+				
 		
-				parsedToken ,err := jwt.Parse(tokenString , func(token *jwt.Token) (interface{}, error) {
+				parsedToken ,err := jwt.ParseWithClaims(tokenString ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 					
 					if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
 						return nil,fmt.Errorf("error")
 					}
 					return con.Jwt_key , nil
 				})
+
+				fmt.Println("tokenstring",tokenString)
+				fmt.Println("parsedtoken signature",parsedToken.Signature)
+				fmt.Println("parsedtoken raw",parsedToken.Raw)
 
 				
 				if err != nil {
@@ -110,10 +116,11 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				//if the token is valid
 		
 				//give the token string to the user so that user can validate its identity in future requests
-				if parsedToken.Valid{
-					user.Token=tokenString
-				}else{
-					fmt.Fprintln(w,"\n token is not valid bhaiya ")
+				if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+					fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+					user.Token=parsedToken.Raw
+				} else {
+					fmt.Println(err)
 				}
 				
 

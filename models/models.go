@@ -1,6 +1,6 @@
 package models
 
-import(
+import (
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
@@ -12,15 +12,17 @@ type User struct{
 	Password string `json:"password"`
 	// Playlist []string `json:"playlist"`
 	Membership string `json:"membership"`
-	Contact_no string `json:"contact gorm:default:unique" `
+	Contact_no string `json:"contact" `
 	Token  string  `json:"token"`
+	Role string `json:"role"`
 	
 }
 
 type Playlist struct {
 
 	User_id   string `json:"user_id"`
-	Song_name string  `json:"song_name"`
+	Playlist_name string `json:"playlist_name"`
+	Song_Path  string `json:"song_path"`
 	
 
 }
@@ -30,6 +32,7 @@ type AudioFile struct {
 	Path      string `json:"path"`
     Name      string `json:"name"`
     Size      float64`json:"size"`
+	Artist    string `json:"artist"`
     
 }
 
@@ -41,7 +44,24 @@ type Paths struct{
 type Claims struct{
 
 	Phone string `json:"phone"`
+	User_id string `json:"user_id"`
+	Role string `json:"role"`
 	jwt.RegisteredClaims
 		
 	
 }
+
+type Memberships struct{
+
+	Membership_name string `json:"membership_name"`
+	Price float64 `json:"price"`
+
+}
+
+type Artist struct{
+
+
+	Artist_name string `json:"artist_name"`
+	Artist_song string `json:"artist_song"`
+}
+
