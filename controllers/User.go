@@ -36,9 +36,51 @@ func User_login(w http.ResponseWriter,r *http.Request){
 	sendOtp("+91" + user.Contact_no)
 	//generate an Otp
 
-
 }
 
+func UpdateProfile(w http.ResponseWriter,r *http.Request){
+
+//update user information facilities
+
+	w.Header().Set("content-type", "application/json")
+	var user models.User
+	json.NewDecoder(r.Body).Decode(&user)
+
+	//check whether user has the correct token to change user information
+	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+						
+		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil,fmt.Errorf("error")
+		}
+		return con.Jwt_key , nil
+	})
+
+	fmt.Println("token parsing hogyi")
+
+	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+		// fmt.Println("claims ki userid",claims)
+		if claims.User_id==user.User_id{
+
+			//update information now
+			err:=db.DB.Where("user_id=?",user.User_id).Updates(&user).Error
+			if err != nil {
+				fmt.Println("err",err.Error())
+
+			}
+			fmt.Fprint(w,"Profile updated successfully")
+
+		}
+		
+		
+	} else {
+		fmt.Println(err)
+	}
+
+
+
+
+}
 
 
 
@@ -70,6 +112,20 @@ func GetSong(w http.ResponseWriter,r * http.Request){
 
 
 	json.NewEncoder(w).Encode(&song)
+
+}
+
+func Get_All_Songs(w http.ResponseWriter,r *http.Request){
+
+	w.Header().Set("Content-Type", "application/json")
+	var songs []models.AudioFile
+
+	query:="SELECT * FROM audio_files;"
+	db.DB.Raw(query).Scan(&songs)
+
+	json.NewEncoder(w).Encode(&songs)
+
+
 
 }
 
@@ -112,6 +168,35 @@ func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 	db.DB.Create(&playlist)
 
 	fmt.Fprint(w,"added to playlist")
+
+
+}
+
+func Show_playlist(w http.ResponseWriter, r *http.Request){
+
+
+	//take the name of the playlist
+	//userid will be automatically fetch from token
+	w.Header().Set("Content-Type", "application/json")
+
+	var playlist models.Playlist //for decoding body
+	var playlists []models.Playlist //for display all songs of playlist
+
+	json.NewDecoder(r.Body).Decode(&playlist)
+	// fmt.Println("playlist name",playlist.Playlist_name)
+
+	
+	
+	
+	query:="SELECT * FROM playlists WHERE playlist_name='"+ playlist.Playlist_name +"';"
+
+	//query_with_pagination:="SELECT *FROM playlists WHERE playlist_name='"+ playlist.Playlist_name +"'LIMIT ;"
+	// fmt.Println("query : ",query)
+
+	db.DB.Raw(query).Scan(&playlists)
+
+	json.NewEncoder(w).Encode(&playlists)
+	
 
 
 }

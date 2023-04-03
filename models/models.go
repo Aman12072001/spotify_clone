@@ -29,7 +29,7 @@ type Playlist struct {
 
 type AudioFile struct {
     ID        string   `json:"id" gorm:"default:uuid_generate_v4();"`
-	Path      string `json:"path"`
+	Path      string `json:"path" gorm:"unique"`
     Name      string `json:"name"`
     Size      float64`json:"size"`
 	Artist    string `json:"artist"`
@@ -48,7 +48,6 @@ type Claims struct{
 	Role string `json:"role"`
 	jwt.RegisteredClaims
 		
-	
 }
 
 type Memberships struct{

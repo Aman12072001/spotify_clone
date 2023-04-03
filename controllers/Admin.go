@@ -125,7 +125,7 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 
 }
 
-func Show_playlist(w http.ResponseWriter,r * http.Request){
+// func Show_playlist(w http.ResponseWriter,r * http.Request){
 
-	//get playlist by userid and 
-}
+// 	//get playlist by userid and 
+// }

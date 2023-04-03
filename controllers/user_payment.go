@@ -3,7 +3,7 @@ package cont
 import (
 	"encoding/json"
 	"fmt"
-	"main/db"
+	"html/template"
 	"main/models"
 	cons "main/utils"
 	"net/http"
@@ -13,22 +13,32 @@ import (
 	"github.com/stripe/stripe-go/v74/paymentintent"
 )
 
+type  html_updates struct{
 
+
+	Email string 
+	Membership string 
+	Client_Secret string 
+} 
 
 func Create_Payment(w http.ResponseWriter, r *http.Request){
 
 	stripe.Key=cons.Stripe_Key
 
 	//get the membership name from body
+	
 	var membership models.Memberships
-	json.NewDecoder(r.Body).Decode(&membership)
-	db.DB.Where("membership_name=?",membership.Membership_name).First(&membership)
+	membershipname := r.URL.Query().Get("membership")
+	membership.Membership_name=membershipname
+	
+	// json.NewDecoder(r.Body).Decode(&membership)
+	// db.DB.Where("membership_name=?",membership.Membership_name).First(&membership)
 	
 
 
 
 	params := &stripe.PaymentIntentParams{
-	Amount: stripe.Int64(int64(membership.Price*100)),
+	Amount: stripe.Int64(1000),  //int64(membership.Price*100)
 	//   AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
 	//     Enabled: stripe.Bool(true),
 	//   },
@@ -36,8 +46,26 @@ func Create_Payment(w http.ResponseWriter, r *http.Request){
 	}
 	pi, _ := paymentintent.New(params)
 
-	fmt.Println("",pi)
-	json.NewEncoder(w).Encode(&pi)
+	fmt.Println("pi client secret",pi.ClientSecret)
+	var html_elements html_updates
+
+	html_elements.Client_Secret=pi.ClientSecret
+	html_elements.Membership=membership.Membership_name
+	//json.NewEncoder(w).Encode(&pi)
+	t, err := template.ParseFiles("controllers/checkout.html")
+
+	if err != nil {
+
+		fmt.Println("template parsing err", err)
+	}
+
+	err = t.Execute(w, html_elements)
+	if err != nil {
+
+		fmt.Println("template executing error", err)
+	}
+
+
 
 }
 
@@ -52,7 +80,7 @@ func Verify_Payment(w http.ResponseWriter, r *http.Request){
 	PaymentMethod: stripe.String("pm_card_visa"),
 	}
 	pi, _ := paymentintent.Confirm(
-	"pi_3MrISTSGSCYafJiX1durch3U",
+	"pi_3MsjSsSGSCYafJiX0cLT4eEJ",
 	params,
 	)
 

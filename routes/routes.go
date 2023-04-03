@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"log"
+	auth "main/Auth_middlewares"
 	cont "main/controllers"
 	"main/db"
 	"main/models"
@@ -48,7 +49,7 @@ func Routes(){
 	}
 
 	//ADMIN
-	mux.HandleFunc("/addSong",cont.Add_Song)
+	mux.Handle("/addSong",auth.IsAuthorized(cont.Add_Song))
 
 
 
@@ -58,11 +59,16 @@ func Routes(){
 	//create playlist
 	mux.HandleFunc("/create_playlist",cont.CreatePlaylist)
 	mux.HandleFunc("/user_login",cont.User_login)
+	mux.HandleFunc("/update_profile",cont.UpdateProfile)
 	mux.HandleFunc("/get_song",cont.GetSong)
+	mux.HandleFunc("/show_playlist",cont.Show_playlist)
+	mux.HandleFunc("/get_all_songs",cont.Get_All_Songs)
 
 	//create payment
 	mux.HandleFunc("/create_payment",cont.Create_Payment)
 	mux.HandleFunc("/verify_payment",cont.Verify_Payment)
+
+	
 
 
 	log.Fatal(http.ListenAndServe(":8000", mux))
