@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	Res "main/Response"
 	"main/db"
 	"main/models"
 	con "main/utils"
@@ -90,7 +91,8 @@ var paymentRes paymentresponse
 
 func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		// w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
 		
 	}
 	var user models.User
@@ -121,6 +123,7 @@ func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 		user.User_id=claims.User_id
 	} else {
 		fmt.Println(err)
+		Res.Response("Unauthorized",401,"token not valid","",w)
 	}
 
 
@@ -130,7 +133,10 @@ func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 	payment.Membership_name=membership.Membership_name
 	payment.User_id=user.User_id
 
-	db.DB.Create(&payment)
+	er:=db.DB.Create(&payment).Error
+	if er!=nil {
+		Res.Response("server error",500,er.Error(),"",w)
+	}
 
 
 
@@ -145,11 +151,14 @@ func order_creation(user_id string,membership models.Memberships ,writer http.Re
 
 	var memship models.Memberships
 	memship.Membership_name=membership.Membership_name
-	db.DB.Where("membership_name=?",membership.Membership_name).First(&memship)
+	er:=db.DB.Where("membership_name=?",membership.Membership_name).First(&memship).Error
+	if er!=nil {
+		Res.Response("server error",500,er.Error(),"",writer)
+	}
 	client := razorpay.NewClient("rzp_test_MLjFMJxEVuaLjd", os.Getenv("Razorpay_Key"))
 
 	data := map[string]interface{}{
-		"amount":   memship.Price,        
+		"amount":   memship.Price*100,        
 		"currency": "INR",
 		"notes": map[string]interface{}{
 
@@ -160,6 +169,7 @@ func order_creation(user_id string,membership models.Memberships ,writer http.Re
 
 	if err != nil {
 		fmt.Println("error in order create request")
+		Res.Response("access denied",402,err.Error(),"",writer)
 	}
 
 	order_id := Body["id"].(string)
@@ -191,7 +201,10 @@ func order_creation(user_id string,membership models.Memberships ,writer http.Re
 		
 		payment.Order_id=order_id
 		
-		db.DB.Where("user_id=?",user_id).Updates(&payment)
+		Er:=db.DB.Where("user_id=?",user_id).Updates(&payment).Error
+		if Er!=nil{
+			Res.Response("server error",500,er.Error(),"",writer)
+		}
 
 
 }
@@ -224,6 +237,7 @@ func Razorpay_Response(w http.ResponseWriter, r *http.Request) {
 	err1:=db.DB.Where("order_id=?",response.Payload.Payment.Entity.OrderID).First(&payment).Error
 	if err1!=nil{
 		fmt.Println("error is ",err1)
+		Res.Response("server error",500,err1.Error(),"",w)
 	}
 	//updates after response
 	payment.Payment_id=response.Payload.Payment.Entity.ID
@@ -234,6 +248,7 @@ func Razorpay_Response(w http.ResponseWriter, r *http.Request) {
 	dbErr:=db.DB.Where("order_id=?",response.Payload.Payment.Entity.OrderID).Updates(&payment).Error
 	if dbErr!=nil{
 		fmt.Println("db error",dbErr)
+		Res.Response("Bad gateway",500,dbErr.Error(),"",w)
 	}
 
 	//Signature verification
@@ -241,10 +256,12 @@ func Razorpay_Response(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("signature", signature)
 	if !VerifyWebhookSignature(body, signature, os.Getenv("API_SecretKey")) {
 		http.Error(w, "Invalid signature", http.StatusUnauthorized)
+		Res.Response("Unauthorized",401,"Invalid signature","",w)
 		return
 	} else {
 
 		fmt.Println("signature verified")
+		Res.Response("OK",200,"Success","",w)
 	}
 
 

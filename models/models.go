@@ -24,7 +24,7 @@ type Playlist struct {
 
 	User_id   string `json:"user_id"`
 	Playlist_name string `json:"playlist_name"`
-	Song_Path  string `json:"song_path"`
+	Song_id  string `json:"song_id"`
 	
 
 }
@@ -70,7 +70,7 @@ type Artist struct{
 type Fav_Songs struct{
 
 	User_id string 
-	Song_path string 
+	Song_id string 
 
 
 }
@@ -99,4 +99,12 @@ type Payments struct{
 	Membership_name string `json:"membershipname"`
 	Time time.Time `json:"time"`
 	Status string `json:"status"`
+}
+
+
+type Response struct {
+	Status  string      `json:"status"`
+	Code    int64       `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }

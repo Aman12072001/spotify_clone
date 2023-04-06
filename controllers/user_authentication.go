@@ -7,29 +7,43 @@ import (
 	"main/models"
 	con "main/utils"
 	"net/http"
+	"os"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/twilio/twilio-go"
 	openapi "github.com/twilio/twilio-go/rest/verify/v2"
+	"golang.org/x/crypto/bcrypt"
+	Res "main/Response"
 )
 
-var client *twilio.RestClient = twilio.NewRestClientWithParams(twilio.ClientParams{
-	Username:con.TWILIO_ACCOUNT_SID,
-	Password: con.TWILIO_AUTH_TOKEN,
-})
+var twilioClient *twilio.RestClient
+	
+func TwilioInit(password string)  {
+	twilioClient = twilio.NewRestClientWithParams(twilio.ClientParams{
+		Username:con.TWILIO_ACCOUNT_SID,
+		Password: password,
+	})
+
+
+}
 
 func sendOtp(to string) {
 	params := &openapi.CreateVerificationParams{}
 	params.SetTo(to)
 	params.SetChannel("sms")
 
+	
 
-	resp, err := client.VerifyV2.CreateVerification(con.VERIFY_SERVICE_SID, params)
+	fmt.Println("from constant",con.TWILIO_AUTH_TOKEN)
+	fmt.Println("from env",os.Getenv("TWILIO_AUTH_TOKEN"))
+
+	resp, err := twilioClient.VerifyV2.CreateVerification(con.VERIFY_SERVICE_SID, params)
 
 	if err != nil {
 		fmt.Println("otp sent failed")
 		fmt.Println(err.Error())
+		
 	} else {
 		fmt.Printf("Sent verification '%s'\n", *resp.Sid)
 	}
@@ -38,7 +52,8 @@ func checkOtp(to string, code string) bool {
 	params := &openapi.CreateVerificationCheckParams{}
 	params.SetTo(to)
 	params.SetCode(code)
-	resp, err := client.VerifyV2.CreateVerificationCheck(con.VERIFY_SERVICE_SID, params)
+	
+	resp, err := twilioClient.VerifyV2.CreateVerificationCheck(con.VERIFY_SERVICE_SID, params)
 
 	if err != nil {
 		fmt.Println("Error is :", err)
@@ -59,6 +74,7 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 	w.Header().Set("Content-Type", "application/json")
 	var otp = make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&otp)
+	
 
 	var user models.User
 	db.DB.Where("contact_no=?",otp["phone"]).First(&user)
@@ -85,6 +101,8 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				if err != nil {
 					fmt.Println("error is :", err)
 					w.WriteHeader(http.StatusInternalServerError)
+				Res.Response("Bad gateway",500,err.Error(),"",w)
+
 					
 				}
 				fmt.Println("tokenString",tokenString)
@@ -109,7 +127,11 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				
 				if err != nil {
 					
-					fmt.Fprint(w, "Invalid or expired token")
+					
+					// response.Message="Invalid or expired token"
+				Res.Response("unauthorized",401,"Invalid or expired token","",w)
+
+					
 					fmt.Println("invalid token",err)
 				
 				}
@@ -124,10 +146,25 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				}
 				
 
-				db.DB.Where("contact_no=?",otp["phone"]).Updates(&user)
+				er:=db.DB.Where("contact_no=?",otp["phone"]).Updates(&user).Error
+				if er!=nil{
+
+					// response.Message=er.Error()
+					// response.Code=500
+				Res.Response("Bad gateway",500,er.Error(),"",w)
+
+				}
 				fmt.Println("token provided successfully")
+				Res.Response("OK",200,"token provided successfully AND PHONE NUMBER VERIFIED","",w)
+				
+
 	} else {
 		w.Write([]byte("Verifictaion failed"))
+		fmt.Println("verification failed")
+		// response.Message="verification failed"
+		// response.Status="Unauthorized"
+		// response.Code=401
+
 	}
 
 
@@ -135,20 +172,35 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 
 }
 
-// func SendOTP(w http.ResponseWriter, r *http.Request){
+//email and password authentication
 
-// 	// we are giving phone number as input in params
-// 	//and user id 
-// 	w.Header().Set("Content-Type", "application/json")
-// 	phNumber := r.URL.Query().Get("number")
-// 	user_id:=r.URL.Query().Get("user_id")
-
-// 	var user models.User
-// 	db.DB.Where("user_id", user_id).First(&user)
-
-// 	sendOtp("+91" + phNumber)
-
-// 	w.Write([]byte("OTP sent successfully "))
-
+// func HashPassword(password string) (string, error) {
+// 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+// 	return string(bytes), err
 // }
+
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+func User_login_with_Email(w http.ResponseWriter, r *http.Request) {
+
+
+	
+	w.Header().Set("Content-Type", "application/json")
+
+	var user models.User
+	json.NewDecoder(r.Body).Decode(&user)
+
+	
+
+
+
+
+
+
+
+}
+
 

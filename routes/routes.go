@@ -56,8 +56,8 @@ func Routes(){
 
 
 	//USER AUTHENTICATION
-	mux.HandleFunc("/user_login",cont.User_login)
-	mux.HandleFunc("/verify_otp",cont.VerifyOtp)
+	mux.HandleFunc("/userLogin",cont.User_login_with_contact_no)
+	mux.HandleFunc("/verifyOtp",cont.VerifyOtp)
 
 	//create playlist
 	mux.HandleFunc("/create_playlist",cont.CreatePlaylist)
@@ -66,20 +66,20 @@ func Routes(){
 	mux.HandleFunc("/update_profile",cont.UpdateProfile)
 
 	//Songs
-	mux.HandleFunc("/get_song",cont.GetSong)
-	mux.HandleFunc("/show_playlist",cont.Show_playlist)
-	mux.HandleFunc("/get_all_songs",cont.Get_All_Songs)
-	mux.HandleFunc("/add_fav_song",cont.Add_song_toFav)
-	mux.HandleFunc("/add_to_recently_played",cont.Add_to_RecentlyPlayed)
-	mux.HandleFunc("/get_recently_played_list",cont.Get_Recently_Played_Songs)
-	mux.HandleFunc("/get_album",cont.Get_Album)
+	mux.HandleFunc("/getSong",cont.GetSong)
+	mux.HandleFunc("/showPlaylist",cont.Show_playlist)
+	mux.HandleFunc("/getAllSongs",cont.Get_All_Songs)
+	mux.HandleFunc("/addFavSong",cont.Add_song_toFav)
+	mux.HandleFunc("/addToRecentlyPlayed",cont.Add_to_RecentlyPlayed)
+	mux.HandleFunc("/getRecentlyPlayedList",cont.Get_Recently_Played_Songs)
+	mux.HandleFunc("/getAlbum",cont.Get_Album)
 
 	//Get artist
-	mux.HandleFunc("/get_artist",cont.Get_Artist)
+	mux.HandleFunc("/getArtist",cont.Get_Artist)
 	
 	//create payment
-	mux.HandleFunc("/make_payment",cont.MakepaymentHandler)
-	mux.HandleFunc("/razorpay_response",cont.Razorpay_Response)
+	mux.HandleFunc("/makePayment",cont.MakepaymentHandler)
+	mux.HandleFunc("/razorpayResponse",cont.Razorpay_Response)
 	
 
 	

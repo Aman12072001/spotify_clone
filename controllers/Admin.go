@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	Res "main/Response"
 	"main/db"
 	"main/models"
 	con "main/utils"
@@ -24,7 +25,10 @@ func Create_Admin(){
 
 	admin.Role="admin"
 	admin.Name="aman-admin"
-	db.DB.Create(&admin)
+	er:=db.DB.Create(&admin).Error
+	if er != nil {
+		fmt.Println("db error during admin creation")
+	}
 	
 }
 func GetToken(){
@@ -37,7 +41,10 @@ func GetToken(){
 	// check if the user is valid then only create token
 
 	var user models.User
-	db.DB.Where("role=?", "admin").First(&user)
+	er:=db.DB.Where("role=?", "admin").First(&user).Error
+	if er != nil {
+		fmt.Println("db error ",er)
+	}
 	claims := models.Claims{
 
 		Role:user.Role,
@@ -58,8 +65,11 @@ func GetToken(){
 	}
 	// fmt.Println("tokenString",tokenString)
 	user.Token=tokenString
-	db.DB.Where("role=?", "admin").Updates(&user)
+	Er:=db.DB.Where("role=?", "admin").Updates(&user).Error
+	if Er!=nil{
 
+		fmt.Println("db error",Er)
+	}
 
 	
 }
@@ -69,7 +79,8 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 
 
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		// w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -94,6 +105,7 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 	 tag, err := id3v2.ParseReader(file,id3v2.Options{Parse: true})
 	 if err != nil {
 		 log.Fatal(err)
+
 	 }
 	// Create a new AudioFile object
 	var audiofile models.AudioFile
@@ -143,9 +155,14 @@ func Add_Thumbnail_Img(w http.ResponseWriter,r * http.Request){
 
 	song.Img_Path=image_Path
 
-	db.DB.Where("id=?",song.ID).Updates(&song)
+	er:=db.DB.Where("id=?",song.ID).Updates(&song).Error
+	if er!=nil{
 
-	fmt.Fprint(w,"Thumbnail added successfully")
+		Res.Response("server error",500,er.Error(),"",w)
+	}
+
+	
+	Res.Response("OK",200,"Thumbnail added successfully","",w)
 
 }
 
@@ -158,9 +175,16 @@ func Create_Album(w http.ResponseWriter,r * http.Request){
 
 	json.NewDecoder(r.Body).Decode(&album)
 
-	db.DB.Create(&album)
+	er:=db.DB.Create(&album).Error
+	if er!=nil{
 
-	fmt.Fprint(w,"Album created")
+		Res.Response("server error",500,er.Error(),"",w)
+		
+	}
+
+	// fmt.Fprint(w,"Album created")
+	Res.Response("OK",200,"Album created","",w)
+
 
 
 }

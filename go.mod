@@ -7,8 +7,9 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/joho/godotenv v1.5.1
-	github.com/stripe/stripe-go/v74 v74.13.0
+	github.com/razorpay/razorpay-go v0.0.0-20230215135222-7e85dffcb7f0
 	github.com/twilio/twilio-go v1.4.0
+	golang.org/x/crypto v0.6.0
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/gorm v1.24.7-0.20230306060331-85eaf9eeda11
 )
@@ -21,7 +22,5 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/razorpay/razorpay-go v0.0.0-20230215135222-7e85dffcb7f0 // indirect
-	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 )
