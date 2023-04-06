@@ -30,7 +30,8 @@ func Create_Admin(){
 func GetToken(){
 
 	// jwt authentication token
-	expirationTime := time.Now().Add(100 * time.Hour)
+	
+	expirationTime := time.Now().Add(365* 24 * time.Hour)
 	fmt.Println("expiration time is: ", expirationTime)
 
 	// check if the user is valid then only create token
@@ -73,10 +74,12 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	var pathh models.Paths
+	//takes audiofile path from r.body
+
+	var pathh models.Path
 	json.NewDecoder(r.Body).Decode(&pathh)
 
-	fmt.Println("path in post req",pathh)
+	fmt.Println("path in post req",pathh.Path)
 
 	 //Open the audio file
 	
@@ -107,11 +110,10 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 	audiofileinBytes:=fileinfo.Size()
 
 	audiofile.Size=float64(audiofileinBytes/(1024*1024))
+
+	
 	
 
-
- 
-	
  
 	 // Create a new record in the database
 	 result := db.DB.Create(&audiofile)
@@ -125,7 +127,41 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 
 }
 
-// func Show_playlist(w http.ResponseWriter,r * http.Request){
 
-// 	//get playlist by userid and 
-// }
+
+func Add_Thumbnail_Img(w http.ResponseWriter,r * http.Request){
+
+
+	//take input audio_file id (in which you want to add IMg)
+	//pass the img path in params 
+
+	var song models.AudioFile
+
+	json.NewDecoder(r.Body).Decode(&song)
+
+	image_Path:=r.URL.Query().Get("img_path")
+
+	song.Img_Path=image_Path
+
+	db.DB.Where("id=?",song.ID).Updates(&song)
+
+	fmt.Fprint(w,"Thumbnail added successfully")
+
+}
+
+func Create_Album(w http.ResponseWriter,r * http.Request){
+
+
+	//take the input song_id,album_name
+
+	var album models.Album
+
+	json.NewDecoder(r.Body).Decode(&album)
+
+	db.DB.Create(&album)
+
+	fmt.Fprint(w,"Album created")
+
+
+}
+

@@ -1,6 +1,8 @@
 package models
 
 import (
+	"time"
+
 	jwt "github.com/golang-jwt/jwt/v4"
 )
 
@@ -33,12 +35,13 @@ type AudioFile struct {
     Name      string `json:"name"`
     Size      float64`json:"size"`
 	Artist    string `json:"artist"`
+	Img_Path string `json:"img_path"`
     
 }
 
-type Paths struct{
+type Path struct {
 
-	Path  string `json:"path"`
+	Path   string `json:"path"`
 }
 
 type Claims struct{
@@ -64,3 +67,36 @@ type Artist struct{
 	Artist_song string `json:"artist_song"`
 }
 
+type Fav_Songs struct{
+
+	User_id string 
+	Song_path string 
+
+
+}
+
+type Recently_Played struct{
+
+
+	User_id string 
+	Song_id string  `json:"song_id"`
+	PlayedAt time.Time
+}
+
+type Album struct{
+
+	Album_name string `json:"album_name"`
+	// Artist_name string `json:"artist_name"`
+	Song_id string `json:"song_id"`
+}
+
+
+type Payments struct{
+
+	User_id string `json:"user_id"`
+	Order_id string `json:"order_id"`
+	Payment_id string `json:"payment_id"`
+	Membership_name string `json:"membershipname"`
+	Time time.Time `json:"time"`
+	Status string `json:"status"`
+}
