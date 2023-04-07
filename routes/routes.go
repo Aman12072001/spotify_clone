@@ -50,20 +50,21 @@ func Routes(){
 
 	//ADMIN
 	mux.Handle("/addSong",auth.IsAuthorized(cont.Add_Song))
-	mux.Handle("/add_img",auth.IsAuthorized(cont.Add_Thumbnail_Img))
-	mux.Handle("/create_album",auth.IsAuthorized(cont.Create_Album))
+	mux.Handle("/addImg",auth.IsAuthorized(cont.Add_Thumbnail_Img))
+	mux.Handle("/createAlbum",auth.IsAuthorized(cont.Create_Album))
 
 
 
 	//USER AUTHENTICATION
 	mux.HandleFunc("/userLogin",cont.User_login_with_contact_no)
 	mux.HandleFunc("/verifyOtp",cont.VerifyOtp)
+	mux.HandleFunc("/userLogout",cont.User_logOut)
 
 	//create playlist
-	mux.HandleFunc("/create_playlist",cont.CreatePlaylist)
+	mux.HandleFunc("/createPlaylist",cont.CreatePlaylist)
 
 	//user profile
-	mux.HandleFunc("/update_profile",cont.UpdateProfile)
+	mux.HandleFunc("/updateProfile",cont.UpdateProfile)
 
 	//Songs
 	mux.HandleFunc("/getSong",cont.GetSong)

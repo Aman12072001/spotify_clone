@@ -10,11 +10,14 @@ import (
 	"os"
 	"time"
 
+	Res "main/Response"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/twilio/twilio-go"
 	openapi "github.com/twilio/twilio-go/rest/verify/v2"
 	"golang.org/x/crypto/bcrypt"
-	Res "main/Response"
 )
 
 var twilioClient *twilio.RestClient
@@ -28,25 +31,29 @@ func TwilioInit(password string)  {
 
 }
 
-func sendOtp(to string) {
+func sendOtp(to string,w http.ResponseWriter) error {
 	params := &openapi.CreateVerificationParams{}
 	params.SetTo(to)
 	params.SetChannel("sms")
 
 	
-
+	fmt.Println("to",to)
 	fmt.Println("from constant",con.TWILIO_AUTH_TOKEN)
 	fmt.Println("from env",os.Getenv("TWILIO_AUTH_TOKEN"))
 
 	resp, err := twilioClient.VerifyV2.CreateVerification(con.VERIFY_SERVICE_SID, params)
 
 	if err != nil {
-		fmt.Println("otp sent failed")
+		fmt.Println("otp sent failed ,api error")
 		fmt.Println(err.Error())
+		Res.Response("Bad request",400,"TWILIO API error","",w)
+
+		return err
 		
 	} else {
 		fmt.Printf("Sent verification '%s'\n", *resp.Sid)
 	}
+	return nil
 }
 func checkOtp(to string, code string) bool {
 	params := &openapi.CreateVerificationCheckParams{}
@@ -75,7 +82,21 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 	var otp = make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&otp)
 	
+	err := validation.Validate(otp,
+		validation.Map(
+			// Name cannot be empty, and the length must be between 5 and 20.
+			validation.Key("otp", validation.Required, validation.Length(6,6)),
+			
+			validation.Key("phone",validation.Required,validation.Length(10, 10),is.Digit,),
+			
+		),
+	)
+	
+	if err!=nil{
 
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}
 	var user models.User
 	db.DB.Where("contact_no=?",otp["phone"]).First(&user)
 	if checkOtp("+91"+otp["phone"], otp["otp"]) {
@@ -89,6 +110,7 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				claims := models.Claims{
 					Phone: user.Contact_no,
 					User_id:user.User_id,
+					Active:true,
 					RegisteredClaims: jwt.RegisteredClaims{
 						ExpiresAt: jwt.NewNumericDate(expirationTime),
 					},
@@ -140,7 +162,10 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				//give the token string to the user so that user can validate its identity in future requests
 				if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
 					fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+					if claims.Active{
 					user.Token=parsedToken.Raw
+					user.LoggedIn=claims.Active
+					}
 				} else {
 					fmt.Println(err)
 				}
@@ -159,12 +184,10 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				
 
 	} else {
-		w.Write([]byte("Verifictaion failed"))
+		// w.Write([]byte("Verifictaion failed"))
 		fmt.Println("verification failed")
-		// response.Message="verification failed"
-		// response.Status="Unauthorized"
-		// response.Code=401
-
+		
+		Res.Response("Unauthorized",401,"Verifictaion failed","",w)
 	}
 
 

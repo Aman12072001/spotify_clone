@@ -16,6 +16,7 @@ import (
 	"os"
 	"time"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/golang-jwt/jwt/v4"
 	razorpay "github.com/razorpay/razorpay-go"
 	// "github.com/stripe/stripe-go/paymentintent"
@@ -90,6 +91,9 @@ var paymentRes paymentresponse
 
 
 func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+
 	if r.Method != http.MethodPost {
 		// w.WriteHeader(http.StatusMethodNotAllowed)
 		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
@@ -99,6 +103,16 @@ func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 	var membership models.Memberships
 
 	membership_name:=r.URL.Query().Get("memship_name")
+	
+	
+
+	err1 := validation.Validate(membership_name,validation.In("Duo","Individual"))
+	
+	if err1!=nil{
+
+		Res.Response("Bad Request",400,err1.Error(),"",w)
+		return
+	}
 
 	membership.Membership_name=membership_name
 	//get the billamount according to the plan selected by user(get it from r.body)
@@ -263,6 +277,9 @@ func Razorpay_Response(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("signature verified")
 		Res.Response("OK",200,"Success","",w)
 	}
+
+
+	
 
 
 

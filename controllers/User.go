@@ -8,9 +8,10 @@ import (
 	"main/models"
 	con "main/utils"
 	"net/http"
-	"strconv"
 	"time"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -23,6 +24,8 @@ func User_login_with_contact_no(w http.ResponseWriter,r *http.Request){
 
 	
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Content-Type", "application/json")
+
 	EnableCors(&w)
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -35,28 +38,45 @@ func User_login_with_contact_no(w http.ResponseWriter,r *http.Request){
 	
 	//take the user name ,email and contact number
 
-	var user models.User
+	
 	input :=make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&input)
-	contact:=input["contact"]
-	if len([]rune(contact))>10 || len([]rune(contact))==0   {
-		Res.Response("Bad request ",400,"enter valid contact number of 10 digits","",w)
+	
+	err := validation.Validate(input,
+		validation.Map(
+			// Name cannot be empty, and the length must be between 5 and 20.
+			validation.Key("name", validation.Required, validation.Length(3, 20)),
+			
+			validation.Key("contact",validation.Required,validation.Length(8, 10),is.Digit,),
+			
+		),
+	)
+	
+	if err!=nil{
 
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
 	}
-	if _, err := strconv.ParseInt(contact,10,64); err == nil {
-		
-	}
 
-	json.NewDecoder(r.Body).Decode(&user)
+	
 
+	var user models.User
+	user.Contact_no=input["contact"]
+	user.Name=input["name"]
 	er:=db.DB.Create(&user).Error
 	if er!=nil{
 		Res.Response("server error",500,er.Error(),"",w)
+		return
 
 	}
+	
 
 	//send otp according to the contact number entered
-	sendOtp("+91" + user.Contact_no)
+	errr:=sendOtp("+91" + input["contact"],w)
+	if errr!=nil{
+
+		return
+	}
 	//generate an Otp
 	Res.Response("OK",200,"OTP SENT","",w)
 
@@ -70,16 +90,56 @@ func HashPassword(password string) (string, error) {
 
 
 
+func User_logOut(w http.ResponseWriter, r *http.Request){
+
+
+	w.Header().Set("content-type", "application/json")
+
+	var user models.User
+
+	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+						
+		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil,fmt.Errorf("error")
+		}
+		return con.Jwt_key , nil
+	})
+
+	fmt.Println("token parsing hogyi")
+
+	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+		// fmt.Println("claims ki userid",claims)
+		
+		user.User_id=claims.User_id
+		
+		
+	} else {
+		fmt.Println(err)
+		Res.Response("Unauthorized",401,err.Error(),"",w)
+
+	}
+	
+	
+	fmt.Println("userid",user.User_id)
+	db.DB.Where("user_id=?",user.User_id).Update("logged_in",false)
+	Res.Response("Success",200,"Logged out successfully","",w)
+
+}
+
+
 func UpdateProfile(w http.ResponseWriter,r *http.Request){
 
 //update user information facilities
+	w.Header().Set("content-type", "application/json")
+
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+		return
 
 	}
 
-	w.Header().Set("content-type", "application/json")
 	var user models.User
 	json.NewDecoder(r.Body).Decode(&user)
 
@@ -151,21 +211,45 @@ func UpdateProfile(w http.ResponseWriter,r *http.Request){
 func GetSong(w http.ResponseWriter,r * http.Request){
 
 
-	// //get the song from db based on the id of song
-	// if r.Method != http.MethodPost {
-	// 	w.WriteHeader(http.StatusMethodNotAllowed)
-	// 	return
-	// }
 	w.Header().Set("Content-Type", "application/json")
 
+	// //get the song from db based on the id of song
+	if r.Method != http.MethodPost {
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+		return
+	}
+
+
+	w.Header().Set("Content-Type", "application/json")
+
+	
+
+	input :=make(map[string]string)
+
+	json.NewDecoder(r.Body).Decode(&input)
+
+	er := validation.Validate(input,
+		validation.Map(
+			// id cannot be empty
+			validation.Key("id", validation.Required,),
+		
+		),
+	)
+	
+	if er!=nil{
+
+		Res.Response("Bad Request",400,er.Error(),"",w)
+		return
+	}
+
 	var song models.AudioFile
+	song.ID=input["id"]
 
-	json.NewDecoder(r.Body).Decode(&song)
-
-	err:=db.DB.Where("id=?",song.ID).First(&song).Error
+	err:=db.DB.Where("id=?",input["id"]).First(&song).Error
 	if err!=nil{
 
 		Res.Response("server error",500,err.Error(),"",w)
+		return
 
 	}
 
@@ -212,13 +296,30 @@ func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 	if r.Method != http.MethodPost {
 		// w.WriteHeader(http.StatusMethodNotAllowed)
 		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+		return
 		
 	}
 	w.Header().Set("Content-Type", "application/json")
-	var playlist models.Playlist
+	
 
+	input:=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
 
-	json.NewDecoder(r.Body).Decode(&playlist)
+	er := validation.Validate(input,
+		validation.Map(
+			// playlist cannot be empty
+			validation.Key("playlist_name", validation.Required),
+			validation.Key("song_id",validation.Required),
+		
+		),
+	)
+	
+	if er!=nil{
+
+		Res.Response("Bad Request",400,er.Error(),"",w)
+		return
+	}
+
 
 	//extract the user_id from the token
 	fmt.Println("playlist var me value encode ho gyi")
@@ -237,12 +338,14 @@ func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		fmt.Println("claims ki userid",claims)
-		playlist.User_id=claims.User_id
+		input["user_id"]=claims.User_id
 	} else {
 		fmt.Println(err)
 		Res.Response("Unauthorized",401,"token not valid","",w)
 	}
-
+	var playlist models.Playlist
+	playlist.Playlist_name=input["playlist_name"]
+	playlist.Song_id=input["song_id"]
 	db.DB.Create(&playlist)
 
 	// fmt.Fprint(w,"added to playlist")
@@ -259,9 +362,28 @@ func Show_playlist(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type", "application/json")
 
 	var playlist models.Playlist //for decoding body
-	var playlists_song []models.Playlist //for display all songs of playlist
+	var playlists_songs []models.Playlist //for display all songs of playlist
 
-	json.NewDecoder(r.Body).Decode(&playlist)
+
+	input:=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+
+	err := validation.Validate(input,
+		validation.Map(
+			// playlist cannot be empty
+			validation.Key("playlist_name", validation.Required),
+		
+		),
+	)
+	
+	if err!=nil{
+
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}
+	playlist.Playlist_name=input["playlist_name"]
+	playlist.Song_id=input["song_id"]
+	
 	// fmt.Println("playlist name",playlist.Playlist_name)
 
 	//token parsing for user credentials
@@ -285,20 +407,23 @@ func Show_playlist(w http.ResponseWriter, r *http.Request){
 
 	}
 
-	
-	
+	fmt.Println("plalist.playlist name",playlist.Playlist_name)
+	fmt.Println("",playlist.User_id)
+
 	
 	query:="SELECT * FROM playlists WHERE playlist_name='"+ playlist.Playlist_name +"'AND user_id='"+ playlist.User_id+"';"
 
 	//query_with_pagination:="SELECT *FROM playlists WHERE playlist_name='"+ playlist.Playlist_name +"'LIMIT ;"
 	// fmt.Println("query : ",query)
 
-	er:=db.DB.Raw(query).Scan(&playlists_song).Error
+	er:=db.DB.Raw(query).Scan(&playlists_songs).Error
 	if er!=nil{
 		Res.Response("server error",500,er.Error(),"",w)
+		return
 	}
+	fmt.Println("playlist songs",playlists_songs)
 	// json.NewEncoder(w).Encode(&playlists_song)
-	Res.Response("OK",200,"Success",playlists_song,w)
+	Res.Response("OK",200,"Success",playlists_songs,w)
 	
 
 
@@ -314,10 +439,28 @@ func Add_song_toFav(w http.ResponseWriter,r *http.Request){
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	//take the song path as input from r.body
-	var song models.AudioFile
+	//take the song id as input from r.body
+	
 
-	json.NewDecoder(r.Body).Decode(&song)
+	input:=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+
+	err1 := validation.Validate(input,
+		validation.Map(
+			// playlist cannot be empty
+			
+			validation.Key("id",validation.Required),
+		
+		),
+	)
+	
+	if err1!=nil{
+
+		Res.Response("Bad Request",400,err1.Error(),"",w)
+		return
+	}
+
+	
 
 	var fav_song models.Fav_Songs
 
@@ -342,14 +485,53 @@ func Add_song_toFav(w http.ResponseWriter,r *http.Request){
 	}
 
 	
-	fav_song.Song_id=song.ID//song ka path set hogya
+	fav_song.Song_id=input["id"]//song ka path set hogya
 
-
+	query:="select exists(select * from fav_songs where user_id='"+fav_song.User_id+"' and song_id='"+fav_song.Song_id+"');"
+	var exists bool
+	db.DB.Raw(query).Scan(&exists)
+	if exists{
+		Res.Response("Bad Request",400,"already exists","",w)
+		return 
+	}
 	er:=db.DB.Create(&fav_song).Error // table me create hogya
 	if er != nil {
 
 		Res.Response("server error",500,er.Error(),"",w)
 	}
+
+	Res.Response("OK",200,"added to fav.","",w)
+
+}
+
+func Get_Fav_song_list(w http.ResponseWriter,r * http.Request){
+
+	w.Header().Set("Content-Type", "application/json")
+
+	var user models.User
+
+
+	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+						
+		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil,fmt.Errorf("error")
+		}
+		return con.Jwt_key , nil
+	})
+
+	fmt.Println("token parsing hogyi")
+
+	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+		fmt.Println("claims ki userid",claims)
+		user.User_id=claims.User_id //user id milgyi
+	} else {
+
+		fmt.Println(err)
+		Res.Response("Unauthorized",401,"token not valid","",w)
+	}
+
+
 
 
 
@@ -362,17 +544,37 @@ func Add_to_RecentlyPlayed(w http.ResponseWriter,r *http.Request){
 	//userid will be fetch from token
 	//playedAt time will be set manually
 	//song id will be decoded from r.body
+	w.Header().Set("Content-Type", "application/json")
+
 	if r.Method != http.MethodPost {
 		// w.WriteHeader(http.StatusMethodNotAllowed)
 		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
 		
 	}
 
+	
+
+	input:=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+
+	er := validation.Validate(input,
+		validation.Map(
+			// song id cannot be empty
+			
+			validation.Key("song_id",validation.Required),
+		
+		),
+	)
+	
+	if er!=nil{
+
+		Res.Response("Bad Request",400,er.Error(),"",w)
+		return
+	}
+
+	
+
 	var recent_add_song models.Recently_Played
-
-	json.NewDecoder(r.Body).Decode(&recent_add_song)
-
-
 		recent_add_song.PlayedAt=time.Now() //played at this time 
 		
 
@@ -397,13 +599,22 @@ func Add_to_RecentlyPlayed(w http.ResponseWriter,r *http.Request){
 			Res.Response("Unauthorized",401,"token not valid","",w)
 		}
 
-
-		er:=db.DB.Create(&recent_add_song).Error
+		recent_add_song.Song_id=input["song_id"]
+		query:="select exists(select * from recently_playeds where user_id='"+recent_add_song.User_id+"' and song_id='"+recent_add_song.Song_id+"');"
+		var exists bool
+		db.DB.Raw(query).Scan(&exists)
+		if exists{
+			Res.Response("Bad Request",400,"already exists","",w)
+			return 
+		}
+		
+		err1:=db.DB.Create(&recent_add_song).Error
 		if er!=nil{
-			Res.Response("server error",500,er.Error(),"",w)
+			Res.Response("server error",500,err1.Error(),"",w)
+			return
 		}
 		// fmt.Fprint(w,"added to recently played")
-		Res.Response("OK",200,"token provided successfully","",w)
+		Res.Response("OK",200,"added to recently played","",w)
 		
 
 	
@@ -447,6 +658,7 @@ func Get_Recently_Played_Songs(w http.ResponseWriter,r *http.Request){
 	if er!=nil{
 
 		Res.Response("server error",500,er.Error(),"",w)
+		return
 	}
 
 	Res.Response("OK",200,"success",list_of_recently_played,w)
@@ -463,20 +675,40 @@ func Get_Artist(w http.ResponseWriter,r *http.Request){
 	w.Header().Set("Content-Type", "application/json")
 
 
-	var artist models.Artist
+	
+	input:=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
 
-	json.NewDecoder(r.Body).Decode(&artist)
+	er := validation.Validate(input,
+		validation.Map(
+			//artist name required
+			
+			validation.Key("artist_name",validation.Required),
+		
+		),
+	)
+	
+	if er!=nil{
+
+		Res.Response("Bad Request",400,er.Error(),"",w)
+		return
+	}
+
+	
 
 	//based on the artist name get the songs from audiofiles table
+	var artist models.Artist
+	artist.Artist_name=input["artist_name"]
 
 	query:="SELECT * FROM audio_files WHERE artist='"+artist.Artist_name+"';"
 
 	var list_of_artist_songs []models.AudioFile
 
-	er:=db.DB.Raw(query).Scan(&list_of_artist_songs).Error
-	if er!=nil{
+	err:=db.DB.Raw(query).Scan(&list_of_artist_songs).Error
+	if err!=nil{
 
-		Res.Response("server error",500,er.Error(),"",w)
+		Res.Response("server error",500,err.Error(),"",w)
+		return
 	}
 
 	// json.NewEncoder(w).Encode(&list_of_artist_songs)
@@ -495,13 +727,32 @@ func Get_Album(w http.ResponseWriter,r *http.Request){
 
 		var album models.Album
 		var album_song_list []models.Album
+
+		input:=make(map[string]interface{})
+		json.NewDecoder(r.Body).Decode(&input)
+	
+		er := validation.Validate(input,
+			validation.Map(
+			
+				validation.Key("album_name",validation.Required),
+			
+			),
+		)
+		
+		if er!=nil{
+	
+			Res.Response("Bad Request",400,er.Error(),"",w)
+			return
+		}
+
 		json.NewDecoder(r.Body).Decode(&album)
 
 		query:="SELECT * FROM albums WHERE album_name='"+album.Album_name+"';"
-		er:=db.DB.Raw(query).Scan(&album_song_list).Error
-		if er!=nil{
+		err:=db.DB.Raw(query).Scan(&album_song_list).Error
+		if err!=nil{
 
-			Res.Response("server error",500,er.Error(),"",w)
+			Res.Response("server error",500,err.Error(),"",w)
+			return
 		}
 		Res.Response("OK",200,"Success",album_song_list,w)
 		// json.NewEncoder(w).Encode(&album_song_list)

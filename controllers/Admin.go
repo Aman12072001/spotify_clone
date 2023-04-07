@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/bogem/id3v2"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -49,6 +50,7 @@ func GetToken(){
 
 		Role:user.Role,
 		User_id:user.User_id,
+		Active:true,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
@@ -88,9 +90,26 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 	//takes audiofile path from r.body
 
 	var pathh models.Path
-	json.NewDecoder(r.Body).Decode(&pathh)
 
-	fmt.Println("path in post req",pathh.Path)
+	input:=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+	err := validation.Validate(input,
+		validation.Map(
+			// song_path cannot be empty
+			
+			validation.Key("path",validation.Required),
+			
+		),
+	)
+	
+	if err!=nil{
+
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}
+	pathh.Path=input["path"]
+
+	
 
 	 //Open the audio file
 	
@@ -145,16 +164,46 @@ func Add_Thumbnail_Img(w http.ResponseWriter,r * http.Request){
 
 
 	//take input audio_file id (in which you want to add IMg)
-	//pass the img path in params 
+	//and img path
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		// w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+		
+	}
+	
 
+	input:=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+	err := validation.Validate(input,
+		validation.Map(
+			// id and img_path cannot be empty
+			validation.Key("id", validation.Required),
+			validation.Key("img_path",validation.Required),
+			
+		),
+	)
+	
+	if err!=nil{
+
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}
+	
 	var song models.AudioFile
+	
 
-	json.NewDecoder(r.Body).Decode(&song)
+	
 
-	image_Path:=r.URL.Query().Get("img_path")
-
-	song.Img_Path=image_Path
-
+	song.Img_Path=input["img_path"]
+	song.ID=input["id"]
+	query:="select exists(select * from audio_files where id='"+song.ID+"' and img_path='"+song.Img_Path+"');"
+	var exists bool
+	db.DB.Raw(query).Scan(&exists)
+	if exists{
+		Res.Response("Bad Request",400,"already exists","",w)
+		return 
+	}	
 	er:=db.DB.Where("id=?",song.ID).Updates(&song).Error
 	if er!=nil{
 
@@ -170,10 +219,44 @@ func Create_Album(w http.ResponseWriter,r * http.Request){
 
 
 	//take the input song_id,album_name
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		// w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+		
+	}
+
+	
+
+	input:=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+	err := validation.Validate(input,
+		validation.Map(
+			
+			validation.Key("album_name", validation.Required),
+			validation.Key("song_id",validation.Required),
+			
+			
+		),
+	)
+	
+	if err!=nil{
+
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}
 
 	var album models.Album
+	album.Album_name=input["album_name"]
+	album.Song_id=input["song_id"]
 
-	json.NewDecoder(r.Body).Decode(&album)
+	query:="select exists(select * from albums where song_id='"+album.Song_id+"' and album_name='"+album.Album_name+"');"
+	var exists bool
+	db.DB.Raw(query).Scan(&exists)
+	if exists{
+		Res.Response("Bad Request",400,"already exists","",w)
+		return 
+	}
 
 	er:=db.DB.Create(&album).Error
 	if er!=nil{

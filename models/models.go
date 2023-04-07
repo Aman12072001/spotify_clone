@@ -17,6 +17,7 @@ type User struct{
 	Contact_no string `json:"contact" `
 	Token  string  `json:"token"`
 	Role string `json:"role"`
+	LoggedIn bool `json:"logged_in"`
 	
 }
 
@@ -49,6 +50,7 @@ type Claims struct{
 	Phone string `json:"phone"`
 	User_id string `json:"user_id"`
 	Role string `json:"role"`
+	Active bool `json:"active"`
 	jwt.RegisteredClaims
 		
 }
