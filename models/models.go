@@ -110,3 +110,10 @@ type Response struct {
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 }
+
+
+type Blacklisted_tokens struct{
+
+
+	Token string `json:"token"`
+}

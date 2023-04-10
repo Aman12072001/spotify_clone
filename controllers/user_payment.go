@@ -11,13 +11,11 @@ import (
 	Res "main/Response"
 	"main/db"
 	"main/models"
-	con "main/utils"
 	"net/http"
 	"os"
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/golang-jwt/jwt/v4"
 	razorpay "github.com/razorpay/razorpay-go"
 	// "github.com/stripe/stripe-go/paymentintent"
 )
@@ -120,24 +118,38 @@ func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 	//get the user_id from token
 
 	//token parsing to get user_id 
-	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						
-		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil,fmt.Errorf("error")
-		}
-		return con.Jwt_key , nil
-	})
+	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 		return nil,fmt.Errorf("error")
+	// 	}
+	// 	return con.Jwt_key , nil
+	// })
 
-	fmt.Println("token parsing hogyi")
+	// fmt.Println("token parsing hogyi")
 
-	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+	// 	fmt.Println("claims ki userid",claims)
+	// 	//user id milgyi
+	// 	user.User_id=claims.User_id
+	// } else {
+	// 	fmt.Println(err)
+	// 	Res.Response("Unauthorized",401,"token not valid","",w)
+	// }
+
+	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-		fmt.Println("claims ki userid",claims)
-		//user id milgyi
+		// fmt.Println("claims ki userid",claims)
+		
 		user.User_id=claims.User_id
+		
+		
+		
 	} else {
 		fmt.Println(err)
-		Res.Response("Unauthorized",401,"token not valid","",w)
+		Res.Response("Unauthorized",401,err.Error(),"",w)
+
 	}
 
 

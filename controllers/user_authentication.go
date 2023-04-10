@@ -38,7 +38,7 @@ func sendOtp(to string,w http.ResponseWriter) error {
 
 	
 	fmt.Println("to",to)
-	fmt.Println("from constant",con.TWILIO_AUTH_TOKEN)
+	// fmt.Println("from constant",con.TWILIO_AUTH_TOKEN)
 	fmt.Println("from env",os.Getenv("TWILIO_AUTH_TOKEN"))
 
 	resp, err := twilioClient.VerifyV2.CreateVerification(con.VERIFY_SERVICE_SID, params)
@@ -103,7 +103,7 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 		w.Write([]byte("Phone Number verified sucessfully"))
 
 				// jwt authentication token
-				expirationTime := time.Now().Add(100 * time.Hour)
+				expirationTime := time.Now().Add(3650*100 * time.Hour)
 				fmt.Println("expiration time is: ", expirationTime)
 		
 				// check if the user is valid then only create token
@@ -226,4 +226,42 @@ func User_login_with_Email(w http.ResponseWriter, r *http.Request) {
 
 }
 
+
+
+func DecodeToken(tokenString string) (models.Claims, error) {
+	claims := &models.Claims{}
+
+	parsedToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("error")
+		}
+		return []byte(os.Getenv("Jwt_key")), nil
+	})
+
+	// fmt.Println("claims",claims)
+	// fmt.Println("raw token",parsedToken.Raw)
+
+	if err != nil || !parsedToken.Valid || Is_Blacklisted(parsedToken.Raw){
+
+		// fmt.Println("fatt gya token parsing")
+		return *claims, fmt.Errorf("Invalid or expired token")
+	}
+
+
+
+	return *claims, nil
+}
+
+func Is_Blacklisted(token string)bool{
+
+
+	query:="SELECT EXISTS(SELECT * FROM blacklisted_tokens WHERE token='"+token+"')"
+	var blacklisted_token bool
+	db.DB.Raw(query).Scan(&blacklisted_token)
+	if blacklisted_token{
+		return true
+	}
+
+	return false
+}
 

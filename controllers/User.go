@@ -6,13 +6,11 @@ import (
 	Res "main/Response"
 	"main/db"
 	"main/models"
-	con "main/utils"
 	"net/http"
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -97,32 +95,38 @@ func User_logOut(w http.ResponseWriter, r *http.Request){
 
 	var user models.User
 
-	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						
-		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil,fmt.Errorf("error")
-		}
-		return con.Jwt_key , nil
-	})
+	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 		return nil,fmt.Errorf("error")
+	// 	}
+	// 	return con.Jwt_key , nil
+	// })
 
-	fmt.Println("token parsing hogyi")
+	// fmt.Println("token parsing hogyi")
 
-	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	
+
+	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		
 		user.User_id=claims.User_id
 		
 		
+		
 	} else {
 		fmt.Println(err)
 		Res.Response("Unauthorized",401,err.Error(),"",w)
+		return
 
 	}
 	
-	
-	fmt.Println("userid",user.User_id)
-	db.DB.Where("user_id=?",user.User_id).Update("logged_in",false)
+	var blacklist_token models.Blacklisted_tokens
+	blacklist_token.Token=r.Header["Token"][0]
+	db.DB.Create(&blacklist_token)
+	user.LoggedIn=false
+	db.DB.Where("user_id=?",user.User_id).Updates(&user)
 	Res.Response("Success",200,"Logged out successfully","",w)
 
 }
@@ -161,19 +165,20 @@ func UpdateProfile(w http.ResponseWriter,r *http.Request){
 	// }
 
 	//check whether user has the correct token to change user information
-	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						
-		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil,fmt.Errorf("error")
-		}
-		return con.Jwt_key , nil
-	})
+	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 		return nil,fmt.Errorf("error")
+	// 	}
+	// 	return con.Jwt_key , nil
+	// })
 
-	fmt.Println("token parsing hogyi")
+	// fmt.Println("token parsing hogyi")
 
-	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
+		
 		if claims.Role!="admin" {
 			claims.Role=""//do not allow user to change itsa role to admin
 		}
@@ -190,8 +195,37 @@ func UpdateProfile(w http.ResponseWriter,r *http.Request){
 			//fmt.Fprint(w,"Profile updated successfully")
 			Res.Response("OK",200,"Profile updated successfully","",w)
 
+		
+		
+		
+	} else {
+		fmt.Println(err)
+		Res.Response("Unauthorized",401,err.Error(),"",w)
+		return
 
-		}
+	}
+
+	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+	// 	// fmt.Println("claims ki userid",claims)
+	// 	if claims.Role!="admin" {
+	// 		claims.Role=""//do not allow user to change itsa role to admin
+	// 	}
+	// 	if claims.User_id==user.User_id{
+
+	// 		//update information now
+	// 		err:=db.DB.Where("user_id=?",user.User_id).Updates(&user).Error
+	// 		if err != nil {
+	// 			fmt.Println("err",err.Error())
+	// 			Res.Response("server error",500,err.Error(),"",w)
+
+
+	// 		}
+	// 		//fmt.Fprint(w,"Profile updated successfully")
+	// 		Res.Response("OK",200,"Profile updated successfully","",w)
+
+
+	// 	}
 		
 		
 	} else {
@@ -275,6 +309,7 @@ func Get_All_Songs(w http.ResponseWriter,r *http.Request){
 	err:=db.DB.Raw(query).Scan(&songs).Error
 	if err!=nil{
 		Res.Response("server error",500,err.Error(),"",w)
+		return
 
 	}
 	Res.Response("OK",200,"Success",songs,w)
@@ -325,24 +360,41 @@ func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 	fmt.Println("playlist var me value encode ho gyi")
 	fmt.Println("header token vlaue",r.Header["Token"][0])
 
-	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						
-		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil,fmt.Errorf("error")
-		}
-		return con.Jwt_key , nil
-	})
+	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 		return nil,fmt.Errorf("error")
+	// 	}
+	// 	return con.Jwt_key , nil
+	// })
 
-	fmt.Println("token parsing hogyi")
+	// fmt.Println("token parsing hogyi")
 
-	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+	// 	fmt.Println("claims ki userid",claims)
+	// 	input["user_id"]=claims.User_id
+	// } else {
+	// 	fmt.Println(err)
+	// 	Res.Response("Unauthorized",401,"token not valid","",w)
+	//}
+	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-		fmt.Println("claims ki userid",claims)
+		// fmt.Println("claims ki userid",claims)
+		
 		input["user_id"]=claims.User_id
+		
+		
+		
 	} else {
 		fmt.Println(err)
-		Res.Response("Unauthorized",401,"token not valid","",w)
+		Res.Response("Unauthorized",401,err.Error(),"",w)
+		return
+
 	}
+
+
+	
 	var playlist models.Playlist
 	playlist.Playlist_name=input["playlist_name"]
 	playlist.Song_id=input["song_id"]
@@ -387,25 +439,42 @@ func Show_playlist(w http.ResponseWriter, r *http.Request){
 	// fmt.Println("playlist name",playlist.Playlist_name)
 
 	//token parsing for user credentials
-	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						
-		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil,fmt.Errorf("error")
-		}
-		return con.Jwt_key , nil
-	})
+	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 		return nil,fmt.Errorf("error")
+	// 	}
+	// 	return con.Jwt_key , nil
+	// })
 
-	fmt.Println("token parsing hogyi")
+	// fmt.Println("token parsing hogyi")
 
-	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+	// 	fmt.Println("claims ki userid",claims)
+	// 	playlist.User_id=claims.User_id
+	// } else {
+	// 	fmt.Println(err)
+	// 	Res.Response("Unauthorized",401,"token not valid","",w)
+
+	// }
+
+	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-		fmt.Println("claims ki userid",claims)
+		// fmt.Println("claims ki userid",claims)
+		
 		playlist.User_id=claims.User_id
+		
+		
+		
 	} else {
 		fmt.Println(err)
-		Res.Response("Unauthorized",401,"token not valid","",w)
+		Res.Response("Unauthorized",401,err.Error(),"",w)
+		return
 
 	}
+
+	
 
 	fmt.Println("plalist.playlist name",playlist.Playlist_name)
 	fmt.Println("",playlist.User_id)
@@ -465,23 +534,38 @@ func Add_song_toFav(w http.ResponseWriter,r *http.Request){
 	var fav_song models.Fav_Songs
 
 	//parse the token to get the user_id
-	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						
-		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil,fmt.Errorf("error")
-		}
-		return con.Jwt_key , nil
-	})
+	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 		return nil,fmt.Errorf("error")
+	// 	}
+	// 	return con.Jwt_key , nil
+	// })
 
-	fmt.Println("token parsing hogyi")
+	// fmt.Println("token parsing hogyi")
 
-	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+	// 	fmt.Println("claims ki userid",claims)
+	// 	fav_song.User_id=claims.User_id //user id milgyi
+	// } else {
+	// 	fmt.Println(err)
+	// 	Res.Response("Unauthorized",401,"token not valid","",w)
+	// }
+
+	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-		fmt.Println("claims ki userid",claims)
+		// fmt.Println("claims ki userid",claims)
+		
 		fav_song.User_id=claims.User_id //user id milgyi
+		
+		
+		
 	} else {
 		fmt.Println(err)
-		Res.Response("Unauthorized",401,"token not valid","",w)
+		Res.Response("Unauthorized",401,err.Error(),"",w)
+		return
+
 	}
 
 	
@@ -498,6 +582,7 @@ func Add_song_toFav(w http.ResponseWriter,r *http.Request){
 	if er != nil {
 
 		Res.Response("server error",500,er.Error(),"",w)
+		return
 	}
 
 	Res.Response("OK",200,"added to fav.","",w)
@@ -510,26 +595,51 @@ func Get_Fav_song_list(w http.ResponseWriter,r * http.Request){
 
 	var user models.User
 
+	var fav_songs_list []models.Fav_Songs
 
-	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+
+	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						
-		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil,fmt.Errorf("error")
-		}
-		return con.Jwt_key , nil
-	})
+	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 		return nil,fmt.Errorf("error")
+	// 	}
+	// 	return con.Jwt_key , nil
+	// })
 
-	fmt.Println("token parsing hogyi")
+	// fmt.Println("token parsing hogyi")
 
-	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+	// 	fmt.Println("claims ki userid",claims)
+	// 	user.User_id=claims.User_id //user id milgyi
+	// } else {
+
+	// 	fmt.Println(err)
+	// 	Res.Response("Unauthorized",401,"token not valid","",w)
+	// }
+
+	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-		fmt.Println("claims ki userid",claims)
+		// fmt.Println("claims ki userid",claims)
+		
 		user.User_id=claims.User_id //user id milgyi
+		
+		
+		
 	} else {
-
 		fmt.Println(err)
-		Res.Response("Unauthorized",401,"token not valid","",w)
+		Res.Response("Unauthorized",401,err.Error(),"",w)
+		return
+
 	}
+
+	query:="SELECT * FROM fav_songs;"
+
+	db.DB.Raw(query).Scan(&fav_songs_list)
+
+	Res.Response("OK",200,"success",fav_songs_list,w)
+
+	
 
 
 
@@ -579,24 +689,38 @@ func Add_to_RecentlyPlayed(w http.ResponseWriter,r *http.Request){
 		
 
 		//parse the token to get userid
-		parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+		// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						
-			if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil,fmt.Errorf("error")
-			}
-			return con.Jwt_key , nil
-		})
+		// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+		// 		return nil,fmt.Errorf("error")
+		// 	}
+		// 	return con.Jwt_key , nil
+		// })
 	
-		fmt.Println("token parsing hogyi")
+		// fmt.Println("token parsing hogyi")
 	
-		if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
-			// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-			fmt.Println("claims ki userid",claims)
-			recent_add_song.User_id=claims.User_id //user id milgyi
-		} else {
+		// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+		// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+		// 	fmt.Println("claims ki userid",claims)
+		// 	recent_add_song.User_id=claims.User_id //user id milgyi
+		// } else {
 
+		// 	fmt.Println(err)
+		// 	Res.Response("Unauthorized",401,"token not valid","",w)
+		// }
+
+		if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+			// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+			// fmt.Println("claims ki userid",claims)
+			
+			recent_add_song.User_id=claims.User_id //user id milgyi
+			
+			
+			
+		} else {
 			fmt.Println(err)
-			Res.Response("Unauthorized",401,"token not valid","",w)
+			Res.Response("Unauthorized",401,err.Error(),"",w)
+	
 		}
 
 		recent_add_song.Song_id=input["song_id"]
@@ -631,26 +755,39 @@ func Get_Recently_Played_Songs(w http.ResponseWriter,r *http.Request){
 
 	var user models.User
 
-	parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
+	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						
-		if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil,fmt.Errorf("error")
-		}
-		return con.Jwt_key , nil
-	})
+	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 		return nil,fmt.Errorf("error")
+	// 	}
+	// 	return con.Jwt_key , nil
+	// })
 
-	fmt.Println("token parsing hogyi")
+	// fmt.Println("token parsing hogyi")
 
-	if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
+	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
+	// 	fmt.Println("claims ki userid",claims)
+	// 	//user id milgyi
+	// 	user.User_id=claims.User_id
+	// } else {
+	// 	fmt.Println(err)
+	// 	Res.Response("Unauthorized",401,"token not valid","",w)
+	// }
+
+	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-		fmt.Println("claims ki userid",claims)
-		//user id milgyi
+		// fmt.Println("claims ki userid",claims)
+		
 		user.User_id=claims.User_id
+		
+		
+		
 	} else {
 		fmt.Println(err)
-		Res.Response("Unauthorized",401,"token not valid","",w)
-	}
+		Res.Response("Unauthorized",401,err.Error(),"",w)
 
+	}
 
 	query:="SELECT * FROM recently_playeds WHERE user_id='"+user.User_id+"' ORDER BY  played_at DESC LIMIT 20"
 	var list_of_recently_played []models.Recently_Played

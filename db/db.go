@@ -22,7 +22,7 @@ func Connect()error{
 		return err
 	}
 
-	db.AutoMigrate(&mod.User{},&mod.AudioFile{},&mod.Playlist{},&mod.Memberships{},mod.Fav_Songs{},mod.Recently_Played{},mod.Album{},mod.Payments{})
+	db.AutoMigrate(&mod.User{},&mod.AudioFile{},&mod.Playlist{},&mod.Memberships{},mod.Fav_Songs{},mod.Recently_Played{},mod.Album{},mod.Payments{},mod.Blacklisted_tokens{})
 
 	DB = db
 
