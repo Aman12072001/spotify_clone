@@ -100,7 +100,11 @@ func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	var membership models.Memberships
 
-	membership_name:=r.URL.Query().Get("memship_name")
+	json.NewDecoder(r.Body).Decode(&membership)
+
+	membership_name:=membership.Membership_name
+
+	fmt.Println("memship_name: ",membership_name)
 	
 	
 
@@ -184,7 +188,7 @@ func order_creation(user_id string,membership models.Memberships ,writer http.Re
 	client := razorpay.NewClient("rzp_test_MLjFMJxEVuaLjd", os.Getenv("Razorpay_Key"))
 
 	data := map[string]interface{}{
-		"amount":   memship.Price*100,        
+		"amount":   memship.Price,        
 		"currency": "INR",
 		"notes": map[string]interface{}{
 
@@ -196,6 +200,7 @@ func order_creation(user_id string,membership models.Memberships ,writer http.Re
 	if err != nil {
 		fmt.Println("error in order create request")
 		Res.Response("access denied",402,err.Error(),"",writer)
+		return
 	}
 
 	order_id := Body["id"].(string)
@@ -246,6 +251,9 @@ func Razorpay_Response(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	// fmt.Println("header token",)
+
+	
 
 	// fmt.Println("Response body",string(body))
 	var response PaymentStatusUpdate
@@ -256,6 +264,9 @@ func Razorpay_Response(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("order_id",response.Payload.Payment.Entity.OrderID)
 	fmt.Println("amount", (response.Payload.Payment.Entity.Amount)/100)
 	fmt.Println("status", response.Payload.Payment.Entity.Status)
+
+	
+
 	//put all the response data to paymentresponse struct
 	
 
@@ -269,6 +280,20 @@ func Razorpay_Response(w http.ResponseWriter, r *http.Request) {
 	payment.Payment_id=response.Payload.Payment.Entity.ID
 	payment.Status=response.Payload.Payment.Entity.Status
 	payment.Time=time.Now()
+
+	if payment.Status=="captured"{
+
+		var user models.User
+
+		db.DB.Where("user_id=?",payment.User_id).First(&user)
+
+		user.Membership=payment.Membership_name
+
+		db.DB.Where("user_id=?",payment.User_id).Updates(&user)
+
+
+		
+	}
 
 	fmt.Println("Payments is;",payment)
 	dbErr:=db.DB.Where("order_id=?",response.Payload.Payment.Entity.OrderID).Updates(&payment).Error

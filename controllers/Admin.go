@@ -4,7 +4,6 @@ package cont
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	Res "main/Response"
 	"main/db"
 	"main/models"
@@ -67,6 +66,7 @@ func GetToken(){
 	}
 	// fmt.Println("tokenString",tokenString)
 	user.Token=tokenString
+	user.LoggedIn=true
 	Er:=db.DB.Where("role=?", "admin").Updates(&user).Error
 	if Er!=nil{
 
@@ -79,6 +79,7 @@ func GetToken(){
 
 func Add_Song(w http.ResponseWriter,r *http.Request) {
 
+	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
 		// w.WriteHeader(http.StatusMethodNotAllowed)
@@ -116,14 +117,19 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 	 file, err := os.Open(pathh.Path)
 	 if err != nil {
 		fmt.Println("err in file opening ")
-		 log.Fatal(err)
+		//  log.Fatal(err)
+		Res.Response("Bad Request",400,"Provide proper audio file path","",w)
+		return
 		 
 	 }
 	 defer file.Close()
  
 	 tag, err := id3v2.ParseReader(file,id3v2.Options{Parse: true})
 	 if err != nil {
-		 log.Fatal(err)
+		//  log.Fatal(err)
+		fmt.Println("err",err)
+		 Res.Response("Server error",500,"error in audio_file parsing ","",w)
+		 return
 
 	 }
 	// Create a new AudioFile object
@@ -147,12 +153,15 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 
  
 	 // Create a new record in the database
-	 result := db.DB.Create(&audiofile)
-	 if result.Error != nil {
-		 fmt.Println(result.Error)
+	 er:=db.DB.Create(&audiofile).Error
+	 if er != nil {
+		 fmt.Println(er.Error())
+		 Res.Response("Bad Request",400,er.Error(),"",w)
 		 return
 	 }
-	fmt.Fprint(w,"Audio file saved to database")
+	// fmt.Fprint(w,"Audio file saved to database")
+
+	 Res.Response("Success",200,"Audio file saved to database","",w)
 	fmt.Println("Audio file saved to database")
  
 

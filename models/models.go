@@ -14,7 +14,7 @@ type User struct{
 	Password string `json:"password"`
 	// Playlist []string `json:"playlist"`
 	Membership string `json:"membership"`
-	Contact_no string `json:"contact" `
+	Contact_no string `json:"contact" gorm:"unique"`
 	Token  string  `json:"token"`
 	Role string `json:"role"`
 	LoggedIn bool `json:"logged_in"`

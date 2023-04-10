@@ -8,6 +8,9 @@ import (
 	"main/db"
 	"main/models"
 	"net/http"
+
+	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 
@@ -16,7 +19,7 @@ func Routes(){
 
 	
 	fmt.Println("Listening on port:8000")
-	mux := http.NewServeMux()
+	mux := mux.NewRouter()
 
 	err := db.Connect()
 	if err != nil {
@@ -75,6 +78,8 @@ func Routes(){
 	mux.HandleFunc("/getRecentlyPlayedList",cont.Get_Recently_Played_Songs)
 	mux.HandleFunc("/getAlbum",cont.Get_Album)
 
+	mux.HandleFunc("/searchSongs",cont.Search_Song)
+
 	//Get artist
 	mux.HandleFunc("/getArtist",cont.Get_Artist)
 	
@@ -83,7 +88,8 @@ func Routes(){
 	mux.HandleFunc("/razorpayResponse",cont.Razorpay_Response)
 	
 
-	
+	mux.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
+
 
 
 	log.Fatal(http.ListenAndServe(":8000", mux))

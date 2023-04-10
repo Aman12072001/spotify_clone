@@ -394,10 +394,22 @@ func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 	}
 
 
+
+
 	
 	var playlist models.Playlist
 	playlist.Playlist_name=input["playlist_name"]
 	playlist.Song_id=input["song_id"]
+	playlist.User_id=input["user_id"]
+
+	query:="select exists(select * from playlists where user_id='"+playlist.User_id+"' and song_id='"+playlist.Song_id+"');"
+	var exists bool
+	db.DB.Raw(query).Scan(&exists)
+	if exists{
+		Res.Response("Bad Request",400,"already exists","",w)
+		return 
+	}
+
 	db.DB.Create(&playlist)
 
 	// fmt.Fprint(w,"added to playlist")
@@ -434,7 +446,7 @@ func Show_playlist(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	playlist.Playlist_name=input["playlist_name"]
-	playlist.Song_id=input["song_id"]
+	
 	
 	// fmt.Println("playlist name",playlist.Playlist_name)
 
@@ -464,6 +476,8 @@ func Show_playlist(w http.ResponseWriter, r *http.Request){
 		// fmt.Println("claims ki userid",claims)
 		
 		playlist.User_id=claims.User_id
+
+		fmt.Println("claims",claims)
 		
 		
 		
@@ -488,6 +502,11 @@ func Show_playlist(w http.ResponseWriter, r *http.Request){
 	er:=db.DB.Raw(query).Scan(&playlists_songs).Error
 	if er!=nil{
 		Res.Response("server error",500,er.Error(),"",w)
+		return
+	}
+	if playlists_songs==nil{
+
+		Res.Response("Bad request",400,"Does not Exists","",w)
 		return
 	}
 	fmt.Println("playlist songs",playlists_songs)
@@ -854,13 +873,14 @@ func Get_Artist(w http.ResponseWriter,r *http.Request){
 
 func Get_Album(w http.ResponseWriter,r *http.Request){
 
+	w.Header().Set("Content-Type", "application/json")
 		//get album based on the name of album
 		if r.Method != http.MethodPost {
 			// w.WriteHeader(http.StatusMethodNotAllowed)
 			Res.Response("Method Not Allowed ",405,"use correct http method","",w)
 			
 		}
-		w.Header().Set("Content-Type", "application/json")
+		
 
 		var album models.Album
 		var album_song_list []models.Album
@@ -895,3 +915,62 @@ func Get_Album(w http.ResponseWriter,r *http.Request){
 		// json.NewEncoder(w).Encode(&album_song_list)
 	
 }
+
+func Search_Song(w http.ResponseWriter,r *http.Request){
+
+	w.Header().Set("Content-Type", "application/json")
+	//get album based on the name of album
+	if r.Method != http.MethodPost {
+		// w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+		
+	}
+	var Song_list []models.AudioFile
+	
+	input:=make (map[string]string)
+
+	json.NewDecoder(r.Body).Decode(&input)
+
+	er := validation.Validate(input,
+		validation.Map(
+		
+			validation.Key("name",validation.Required),
+		
+		),
+	)
+	
+	if er!=nil{
+
+		Res.Response("Bad Request",400,er.Error(),"",w)
+		return
+	}
+
+
+	query:="SELECT * FROM audio_files WHERE LOWER(name) LIKE LOWER('"+input["name"]+"%')UNION SELECT * FROM audio_files WHERE LOWER(name) LIKE LOWER('%"+input["name"]+"%')AND LOWER(name) NOT LIKE LOWER('"+input["name"]+"%') ;"
+
+	err:=db.DB.Raw(query).Scan(&Song_list).Error
+
+	if err!=nil{
+
+		Res.Response("Bad Request",400,er.Error(),"",w)
+		return
+	}
+
+//	query2:="SELECT * FROM audio_files WHERE LOWER(name) LIKE LOWER('%"+input["name"]+"%')AND LOWER(name) NOT LIKE LOWER('"+input["name"]+"%');"
+
+	// db.DB.Raw(query2).Scan(&Song_list2)
+
+	// Song_list=append(Song_list, Song_list2...)
+
+	Res.Response("OK",200,"Success",Song_list,w)
+
+	// json.NewEncoder(w).Encode(&Song_list)
+
+
+
+
+	
+
+
+}
+
