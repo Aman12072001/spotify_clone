@@ -61,13 +61,26 @@ func User_login_with_contact_no(w http.ResponseWriter,r *http.Request){
 	var user models.User
 	user.Contact_no=input["contact"]
 	user.Name=input["name"]
-	er:=db.DB.Create(&user).Error
-	if er!=nil{
-		Res.Response("server error",500,er.Error(),"",w)
-		return
 
-	}
+
+		//IF ALREADY EXISTS JUST UPDATE THE TOKEN OTHERWISE CREATE NEW USER
+
+		query:="select exists(select * from users where contact_no='"+input["contact"]+"');"
+		var user_exists bool
+		db.DB.Raw(query).Scan(&user_exists)
+		if !user_exists{
+
+			//create entry 
+			er:=db.DB.Create(&user).Error
+			
+			if er!=nil{
+			Res.Response("server error",500,er.Error(),"",w)
+			return
 	
+			}
+	
+		}
+
 
 	//send otp according to the contact number entered
 	errr:=sendOtp("+91" + input["contact"],w)
@@ -107,7 +120,7 @@ func User_logOut(w http.ResponseWriter, r *http.Request){
 
 	
 
-	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		
@@ -175,7 +188,7 @@ func UpdateProfile(w http.ResponseWriter,r *http.Request){
 
 	// fmt.Println("token parsing hogyi")
 
-	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		
@@ -378,7 +391,7 @@ func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 	// 	fmt.Println(err)
 	// 	Res.Response("Unauthorized",401,"token not valid","",w)
 	//}
-	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		
@@ -471,7 +484,7 @@ func Show_playlist(w http.ResponseWriter, r *http.Request){
 
 	// }
 
-	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		
@@ -572,7 +585,7 @@ func Add_song_toFav(w http.ResponseWriter,r *http.Request){
 	// 	Res.Response("Unauthorized",401,"token not valid","",w)
 	// }
 
-	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		
@@ -637,7 +650,7 @@ func Get_Fav_song_list(w http.ResponseWriter,r * http.Request){
 	// 	Res.Response("Unauthorized",401,"token not valid","",w)
 	// }
 
-	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		
@@ -728,7 +741,7 @@ func Add_to_RecentlyPlayed(w http.ResponseWriter,r *http.Request){
 		// 	Res.Response("Unauthorized",401,"token not valid","",w)
 		// }
 
-		if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+		if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 			// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 			// fmt.Println("claims ki userid",claims)
 			
@@ -794,7 +807,7 @@ func Get_Recently_Played_Songs(w http.ResponseWriter,r *http.Request){
 	// 	Res.Response("Unauthorized",401,"token not valid","",w)
 	// }
 
-	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		

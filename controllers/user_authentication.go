@@ -100,10 +100,12 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 	var user models.User
 	db.DB.Where("contact_no=?",otp["phone"]).First(&user)
 	if checkOtp("+91"+otp["phone"], otp["otp"]) {
-		w.Write([]byte("Phone Number verified sucessfully"))
+		// w.Write([]byte("Phone Number verified sucessfully"))
+
+
 
 				// jwt authentication token
-				expirationTime := time.Now().Add(3650*100 * time.Hour)
+				expirationTime := time.Now().Add(2 * time.Minute)
 				fmt.Println("expiration time is: ", expirationTime)
 		
 				// check if the user is valid then only create token
@@ -118,34 +120,28 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 				fmt.Println("claims: ", claims)
 		
 				token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 				fmt.Println("token: ", token)
+
 				tokenString, err := token.SignedString((con.Jwt_key))
+
 				if err != nil {
 					fmt.Println("error is :", err)
 					w.WriteHeader(http.StatusInternalServerError)
 				Res.Response("Bad gateway",500,err.Error(),"",w)
-
-					
-				}
+					}
 				fmt.Println("tokenString",tokenString)
 				
 				
-		
-				//token parsing and verification
+					//put this token in a cookie
+
+					http.SetCookie(w, &http.Cookie{
+						Name:    "token",
+						Value:   tokenString,
+						Expires: expirationTime,
+					})
 				
-		
-				parsedToken ,err := jwt.ParseWithClaims(tokenString ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
-					
-					if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-						return nil,fmt.Errorf("error")
-					}
-					return con.Jwt_key , nil
-				})
-
-				fmt.Println("tokenstring",tokenString)
-				fmt.Println("parsedtoken signature",parsedToken.Signature)
-				fmt.Println("parsedtoken raw",parsedToken.Raw)
-
+					fmt.Println("cookie set hua")
 				
 				if err != nil {
 					
@@ -157,18 +153,13 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 					fmt.Println("invalid token",err)
 				
 				}
-				//if the token is valid
+				//after the token is provided
 		
-				//give the token string to the user so that user can validate its identity in future requests
-				if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
-					fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-					if claims.Active{
-					user.Token=parsedToken.Raw
+		
+					user.Token=tokenString
 					user.LoggedIn=claims.Active
-					}
-				} else {
-					fmt.Println(err)
-				}
+				
+				
 				
 
 				er:=db.DB.Where("contact_no=?",otp["phone"]).Updates(&user).Error
@@ -228,18 +219,32 @@ func User_login_with_Email(w http.ResponseWriter, r *http.Request) {
 
 
 
-func DecodeToken(tokenString string) (models.Claims, error) {
+func DecodeToken(w http.ResponseWriter,r *http.Request) (models.Claims, error) {
+	
 	claims := &models.Claims{}
+	c, err := r.Cookie("token")
+	if err!= nil{
 
-	parsedToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		Res.Response("Unauthorized",401,"cookie not found","",w)
+		return *claims, err
+	}
+	parsedToken, err := jwt.ParseWithClaims(c.Value, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("error")
 		}
 		return []byte(os.Getenv("Jwt_key")), nil
 	})
 
-	// fmt.Println("claims",claims)
-	// fmt.Println("raw token",parsedToken.Raw)
+	//if token has expired
+	if claims.ExpiresAt.Before(time.Now().Add(59*time.Minute)) {
+
+		claims.ExpiresAt=jwt.NewNumericDate(time.Now().Add(1 * time.Hour))
+		//provide new token
+		NewTokenString:=GenerateNewToken(claims)
+		c.Value=NewTokenString
+		c.Expires=time.Now().Add(1*time.Hour)
+		http.SetCookie(w,c)
+	}
 
 	if err != nil || !parsedToken.Valid || Is_Blacklisted(parsedToken.Raw){
 
@@ -265,3 +270,15 @@ func Is_Blacklisted(token string)bool{
 	return false
 }
 
+func GenerateNewToken(claims *models.Claims) string {
+
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	fmt.Println("token: ", token)
+	tokenString, err := token.SignedString((con.Jwt_key))
+	if err != nil {
+		fmt.Println("error is :", err)
+		
+	}
+	return tokenString
+}

@@ -142,7 +142,7 @@ func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 	// 	Res.Response("Unauthorized",401,"token not valid","",w)
 	// }
 
-	if claims, err :=DecodeToken(r.Header["Token"][0]);err==nil && claims.Active{
+	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		
