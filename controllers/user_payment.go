@@ -88,6 +88,14 @@ var paymentRes paymentresponse
 
 
 
+
+// @Description Initiate Payment
+// @Accept json
+// @Produce json
+// @Param  details body string true "enter membership_name SchemaExample({ "membership_name":"Individual"})
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /makePayment [post]
 func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")

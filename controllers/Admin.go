@@ -18,6 +18,7 @@ import (
 )
 
 
+
 func Create_Admin(){
 
 
@@ -77,6 +78,13 @@ func GetToken(){
 }
 
 
+// @Description Add Song into app
+// @Accept json
+// @Produce json
+// @Param  details body string true "enter PATH of song SchemaExample({"path":"/home/chicmic/Downloads/"})
+// @Tags Admin
+// @Success 200 {object} models.Response
+// @Router /addSong [post]
 func Add_Song(w http.ResponseWriter,r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -168,7 +176,13 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 }
 
 
-
+// @Description Add Thumbnail for Song 
+// @Accept json
+// @Produce json
+// @Param  details body string true "enter Song id and path of thumbnail of song SchemaExample({"id":"xyz","img_path":"/"})
+// @Tags Admin
+// @Success 200 {object} models.Response
+// @Router /addImg [post]
 func Add_Thumbnail_Img(w http.ResponseWriter,r * http.Request){
 
 
@@ -224,6 +238,14 @@ func Add_Thumbnail_Img(w http.ResponseWriter,r * http.Request){
 
 }
 
+
+// @Description Create Album
+// @Accept json
+// @Produce json
+// @Param  details body string true "enter Song id and album name SchemaExample({"song_id":"xyz","album_name":"name"})
+// @Tags Admin
+// @Success 200 {object} models.Response
+// @Router /createAlbum [post]
 func Create_Album(w http.ResponseWriter,r * http.Request){
 
 

@@ -76,6 +76,15 @@ func checkOtp(to string, code string) bool {
 
 }
 
+
+
+// @Description Verify OTP enter by user
+// @Accept json
+// @Produce json
+// @Tags User
+// @Param  details body string true "phone number and otp" SchemaExample({"phone":"1234567890","otp":"666666"})
+// @Success 200 {object} models.Response
+// @Router /verifyOtp [post]
 func VerifyOtp(w http.ResponseWriter,r * http.Request){
 
 	w.Header().Set("Content-Type", "application/json")

@@ -6,6 +6,7 @@ import (
 	auth "main/Auth_middlewares"
 	cont "main/controllers"
 	"main/db"
+	_ "main/docs"
 	"main/models"
 	"net/http"
 

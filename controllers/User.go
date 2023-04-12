@@ -14,10 +14,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-
-
-
-
+// @Description User login with name and contact_no
+// @Accept json
+// @Produce json
+//  @Param  details body string true "name and contact number" SchemaExample({"name":"john doe","contact":"1234567890"})
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /userLogin [post]
 func User_login_with_contact_no(w http.ResponseWriter,r *http.Request){
 
 	
@@ -100,7 +103,11 @@ func HashPassword(password string) (string, error) {
 }
 
 
-
+// @Description User logout
+// @Produce json
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /userLogout [get]
 func User_logOut(w http.ResponseWriter, r *http.Request){
 
 
@@ -108,15 +115,7 @@ func User_logOut(w http.ResponseWriter, r *http.Request){
 
 	var user models.User
 
-	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
-						
-	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-	// 		return nil,fmt.Errorf("error")
-	// 	}
-	// 	return con.Jwt_key , nil
-	// })
 
-	// fmt.Println("token parsing hogyi")
 
 	
 	claims, err :=DecodeToken(w,r)
@@ -164,14 +163,18 @@ func User_logOut(w http.ResponseWriter, r *http.Request){
 	//overwrite with a just in time expired cookie
 
 }
-
-
+// @Description Update profile
+// @Accept json
+// @Produce json
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /updateProfile [put]
 func UpdateProfile(w http.ResponseWriter,r *http.Request){
 
 //update user information facilities
 	w.Header().Set("content-type", "application/json")
 
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
 		return
@@ -193,21 +196,7 @@ func UpdateProfile(w http.ResponseWriter,r *http.Request){
 	
 
 	
-	// func CheckPasswordHash(password, hash string) bool {
-	// 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	// 	return err == nil
-	// }
-
-	//check whether user has the correct token to change user information
-	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
-						
-	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-	// 		return nil,fmt.Errorf("error")
-	// 	}
-	// 	return con.Jwt_key , nil
-	// })
-
-	// fmt.Println("token parsing hogyi")
+	
 
 	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
@@ -274,8 +263,13 @@ func UpdateProfile(w http.ResponseWriter,r *http.Request){
 }
 
 
-
-
+// @Description Get song by id
+// @Accept json
+// @Produce json
+//  @Param  details body string true "enter song id" SchemaExample({"song_id":"xyz"})
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /getSong [post]
 func GetSong(w http.ResponseWriter,r * http.Request){
 
 
@@ -323,17 +317,16 @@ func GetSong(w http.ResponseWriter,r * http.Request){
 
 
 
-		//return the path for the frontend dev
-
-		// response.Code=200
-		// response.Status="OK"
-		// response.Message="token provided successfully"
-	// json.NewEncoder(w).Encode(&song)
 	Res.Response("OK",200,"Success",song,w)
 
 
 }
 
+// @Description Get all song
+// @Produce json
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /getAllSongs [get]
 func Get_All_Songs(w http.ResponseWriter,r *http.Request){
 
 	w.Header().Set("Content-Type", "application/json")
@@ -354,6 +347,13 @@ func Get_All_Songs(w http.ResponseWriter,r *http.Request){
 
 }
 
+// @Description Create playlist
+// @Accept json
+// @Produce json
+//  @Param  details body string true "enter playlist name and song id" SchemaExample({"playlist_name":"name of your playlist","song_id":"xyz"})
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /createPlaylist [post]
 func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 
 
@@ -391,27 +391,9 @@ func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 
 
 	//extract the user_id from the token
-	fmt.Println("playlist var me value encode ho gyi")
-	// fmt.Println("header token vlaue",r.Header["Token"][0])
-
-	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
-						
-	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-	// 		return nil,fmt.Errorf("error")
-	// 	}
-	// 	return con.Jwt_key , nil
-	// })
-
-	// fmt.Println("token parsing hogyi")
-
-	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
-	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-	// 	fmt.Println("claims ki userid",claims)
-	// 	input["user_id"]=claims.User_id
-	// } else {
-	// 	fmt.Println(err)
-	// 	Res.Response("Unauthorized",401,"token not valid","",w)
-	//}
+	// fmt.Println("playlist var me value encode ho gyi")
+	
+	
 	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
@@ -452,6 +434,11 @@ func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 
 }
 
+// @Description Show existing playlist
+// @Produce json
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /showPlaylist [get]
 func Show_playlist(w http.ResponseWriter, r *http.Request){
 
 
@@ -551,6 +538,13 @@ func Show_playlist(w http.ResponseWriter, r *http.Request){
 
 }
 
+// @Description Add your Fav. Song with this api
+// @Accept json
+// @Produce json
+//  @Param  details body string true "enter song id" SchemaExample({"id":"xyz"})
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /addFavSong [post]
 func Add_song_toFav(w http.ResponseWriter,r *http.Request){
 
 
@@ -642,6 +636,13 @@ func Add_song_toFav(w http.ResponseWriter,r *http.Request){
 
 }
 
+
+// @Description Add your Fav. Song with this api
+// @Accept json
+// @Produce json
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /addFavSong [get]
 func Get_Fav_song_list(w http.ResponseWriter,r * http.Request){
 
 	w.Header().Set("Content-Type", "application/json")
@@ -651,25 +652,6 @@ func Get_Fav_song_list(w http.ResponseWriter,r * http.Request){
 	var fav_songs_list []models.Fav_Songs
 
 
-	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
-						
-	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-	// 		return nil,fmt.Errorf("error")
-	// 	}
-	// 	return con.Jwt_key , nil
-	// })
-
-	// fmt.Println("token parsing hogyi")
-
-	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
-	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-	// 	fmt.Println("claims ki userid",claims)
-	// 	user.User_id=claims.User_id //user id milgyi
-	// } else {
-
-	// 	fmt.Println(err)
-	// 	Res.Response("Unauthorized",401,"token not valid","",w)
-	// }
 
 	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
@@ -692,15 +674,18 @@ func Get_Fav_song_list(w http.ResponseWriter,r * http.Request){
 
 	Res.Response("OK",200,"success",fav_songs_list,w)
 
-	
-
-
-
 
 
 }
 
 
+// @Description Add to Recently_Played list
+// @Accept json
+// @Produce json
+//  @Param  details body string true "enter song id" SchemaExample({"song_id":"xyz"})
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /addToRecentlyPlayed [post]
 func Add_to_RecentlyPlayed(w http.ResponseWriter,r *http.Request){
 
 
@@ -797,7 +782,12 @@ func Add_to_RecentlyPlayed(w http.ResponseWriter,r *http.Request){
 	
 }
 
-
+// @Description Get Recently_Played list
+// @Accept json
+// @Produce json
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /getRecentlyPlayedList [get]
 func Get_Recently_Played_Songs(w http.ResponseWriter,r *http.Request){
 
 	//get the list of 20 recently played songs
@@ -808,25 +798,6 @@ func Get_Recently_Played_Songs(w http.ResponseWriter,r *http.Request){
 
 	var user models.User
 
-	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
-						
-	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-	// 		return nil,fmt.Errorf("error")
-	// 	}
-	// 	return con.Jwt_key , nil
-	// })
-
-	// fmt.Println("token parsing hogyi")
-
-	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
-	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-	// 	fmt.Println("claims ki userid",claims)
-	// 	//user id milgyi
-	// 	user.User_id=claims.User_id
-	// } else {
-	// 	fmt.Println(err)
-	// 	Res.Response("Unauthorized",401,"token not valid","",w)
-	// }
 
 	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
@@ -858,6 +829,14 @@ func Get_Recently_Played_Songs(w http.ResponseWriter,r *http.Request){
 
 }
 
+
+// @Description Get Artist
+// @Accept json
+// @Produce json
+//  @Param  details body string true "enter name of artist SchemaExample({"artist_name":"Arijit Singh"})
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /getArtist [post]
 func Get_Artist(w http.ResponseWriter,r *http.Request){
 
 
@@ -905,6 +884,14 @@ func Get_Artist(w http.ResponseWriter,r *http.Request){
 	Res.Response("OK",200,"Success",list_of_artist_songs,w)
 }
 
+
+// @Description Get Album
+// @Accept json
+// @Produce json
+// @Param  details body string true "enter name of album SchemaExample({"album_name":"xyzBest"})
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /getAlbum [post]
 func Get_Album(w http.ResponseWriter,r *http.Request){
 
 	w.Header().Set("Content-Type", "application/json")
@@ -950,6 +937,14 @@ func Get_Album(w http.ResponseWriter,r *http.Request){
 	
 }
 
+
+// @Description Search Song by name
+// @Accept json
+// @Produce json
+// @Param  details body string true "enter name of song SchemaExample({"name":"song_name"})
+// @Tags User
+// @Success 200 {object} models.Response
+// @Router /searchSongs [post]
 func Search_Song(w http.ResponseWriter,r *http.Request){
 
 	w.Header().Set("Content-Type", "application/json")
@@ -963,6 +958,7 @@ func Search_Song(w http.ResponseWriter,r *http.Request){
 	
 	input:=make (map[string]string)
 
+	
 	json.NewDecoder(r.Body).Decode(&input)
 
 	er := validation.Validate(input,
@@ -990,11 +986,7 @@ func Search_Song(w http.ResponseWriter,r *http.Request){
 		return
 	}
 
-//	query2:="SELECT * FROM audio_files WHERE LOWER(name) LIKE LOWER('%"+input["name"]+"%')AND LOWER(name) NOT LIKE LOWER('"+input["name"]+"%');"
 
-	// db.DB.Raw(query2).Scan(&Song_list2)
-
-	// Song_list=append(Song_list, Song_list2...)
 
 	Res.Response("OK",200,"Success",Song_list,w)
 
@@ -1005,6 +997,7 @@ func Search_Song(w http.ResponseWriter,r *http.Request){
 
 	
 
+	
 
 }
 

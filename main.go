@@ -10,7 +10,10 @@ import (
 	"github.com/joho/godotenv"
 )
 
-
+// @title Spotify API
+// @version 1.0.0
+// @description API Documentation for Spotify
+// @host localhost:8000
 func main(){
 
 

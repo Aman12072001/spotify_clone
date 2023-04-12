@@ -1,4 +1,382 @@
+definitions:
+  models.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+host: localhost:8000
 info:
   contact: {}
-paths: {}
+  description: API Documentation for Spotify
+  title: Spotify API
+  version: 1.0.0
+paths:
+  /addFavSong:
+    get:
+      consumes:
+      - application/json
+      description: Add your Fav. Song with this api
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+    post:
+      consumes:
+      - application/json
+      description: Add your Fav. Song with this api
+      parameters:
+      - description: enter song id
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"id":"xyz"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /addImg:
+    post:
+      consumes:
+      - application/json
+      description: Add Thumbnail for Song
+      parameters:
+      - description: enter Song id and path of thumbnail of song SchemaExample({
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"id":"xyz","img_path":"/"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - Admin
+  /addSong:
+    post:
+      consumes:
+      - application/json
+      description: Add Song into app
+      parameters:
+      - description: enter PATH of song SchemaExample({
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"path":"/home/chicmic/Downloads/"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - Admin
+  /addToRecentlyPlayed:
+    post:
+      consumes:
+      - application/json
+      description: Add to Recently_Played list
+      parameters:
+      - description: enter song id
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"song_id":"xyz"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /createAlbum:
+    post:
+      consumes:
+      - application/json
+      description: Create Album
+      parameters:
+      - description: enter Song id and album name SchemaExample({
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"song_id":"xyz","album_name":"name"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - Admin
+  /createPlaylist:
+    post:
+      consumes:
+      - application/json
+      description: Create playlist
+      parameters:
+      - description: enter playlist name and song id
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"playlist_name":"name of your playlist","song_id":"xyz"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /getAlbum:
+    post:
+      consumes:
+      - application/json
+      description: Get Album
+      parameters:
+      - description: enter name of album SchemaExample({
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"album_name":"xyzBest"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /getAllSongs:
+    get:
+      description: Get all song
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /getArtist:
+    post:
+      consumes:
+      - application/json
+      description: Get Artist
+      parameters:
+      - description: enter name of artist SchemaExample({
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"artist_name":"Arijit Singh"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /getRecentlyPlayedList:
+    get:
+      consumes:
+      - application/json
+      description: Get Recently_Played list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /getSong:
+    post:
+      consumes:
+      - application/json
+      description: Get song by id
+      parameters:
+      - description: enter song id
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"song_id":"xyz"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /makePayment:
+    post:
+      consumes:
+      - application/json
+      description: Initiate Payment
+      parameters:
+      - description: 'enter membership_name SchemaExample({ '
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{ "membership_name":"Individual"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /searchSongs:
+    post:
+      consumes:
+      - application/json
+      description: Search Song by name
+      parameters:
+      - description: enter name of song SchemaExample({
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"name":"song_name"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /showPlaylist:
+    get:
+      description: Show existing playlist
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /updateProfile:
+    put:
+      consumes:
+      - application/json
+      description: Update profile
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /userLogin:
+    post:
+      consumes:
+      - application/json
+      description: User login with name and contact_no
+      parameters:
+      - description: name and contact number
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"name":"john doe","contact":"1234567890"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /userLogout:
+    get:
+      description: User logout
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /verifyOtp:
+    post:
+      consumes:
+      - application/json
+      description: Verify OTP enter by user
+      parameters:
+      - description: phone number and otp
+        in: body
+        name: details
+        required: true
+        schema:
+          example: '{"phone":"1234567890","otp":"666666"}'
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
 swagger: "2.0"
