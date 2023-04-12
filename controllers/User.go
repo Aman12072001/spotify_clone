@@ -119,8 +119,8 @@ func User_logOut(w http.ResponseWriter, r *http.Request){
 	// fmt.Println("token parsing hogyi")
 
 	
-
-	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
+	claims, err :=DecodeToken(w,r)
+	if err==nil && claims.Active{
 		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
 		// fmt.Println("claims ki userid",claims)
 		
@@ -135,12 +135,33 @@ func User_logOut(w http.ResponseWriter, r *http.Request){
 
 	}
 	
+	c, err := r.Cookie("token")
+
 	var blacklist_token models.Blacklisted_tokens
-	blacklist_token.Token=r.Header["Token"][0]
+	blacklist_token.Token=c.Value
 	db.DB.Create(&blacklist_token)
+	fmt.Println("token blaclist hua")
 	user.LoggedIn=false
 	db.DB.Where("user_id=?",user.User_id).Updates(&user)
+
+
+	
+	cookie:=&http.Cookie{
+
+		Name: "token",
+		Expires: time.Now(),
+	}
+
+	http.SetCookie(w,cookie)
+
+	fmt.Println("expired cookie set hua")
+	fmt.Fprint(w,"cookie expire hua?")
+
 	Res.Response("Success",200,"Logged out successfully","",w)
+
+
+
+	//overwrite with a just in time expired cookie
 
 }
 
@@ -371,7 +392,7 @@ func CreatePlaylist(w http.ResponseWriter,r * http.Request){
 
 	//extract the user_id from the token
 	fmt.Println("playlist var me value encode ho gyi")
-	fmt.Println("header token vlaue",r.Header["Token"][0])
+	// fmt.Println("header token vlaue",r.Header["Token"][0])
 
 	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
 						

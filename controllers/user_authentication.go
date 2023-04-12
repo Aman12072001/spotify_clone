@@ -138,7 +138,8 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 					http.SetCookie(w, &http.Cookie{
 						Name:    "token",
 						Value:   tokenString,
-						Expires: expirationTime,
+						HttpOnly: true,
+						Expires: expirationTime.Add(8*time.Hour),
 					})
 				
 					fmt.Println("cookie set hua")
@@ -147,7 +148,7 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 					
 					
 					// response.Message="Invalid or expired token"
-				Res.Response("unauthorized",401,"Invalid or expired token","",w)
+					Res.Response("unauthorized",401,"Invalid or expired token","",w)
 
 					
 					fmt.Println("invalid token",err)
@@ -225,7 +226,7 @@ func DecodeToken(w http.ResponseWriter,r *http.Request) (models.Claims, error) {
 	c, err := r.Cookie("token")
 	if err!= nil{
 
-		Res.Response("Unauthorized",401,"cookie not found","",w)
+		// Res.Response("Unauthorized",401,"cookie not found","",w)
 		return *claims, err
 	}
 	parsedToken, err := jwt.ParseWithClaims(c.Value, claims, func(token *jwt.Token) (interface{}, error) {
@@ -235,8 +236,15 @@ func DecodeToken(w http.ResponseWriter,r *http.Request) (models.Claims, error) {
 		return []byte(os.Getenv("Jwt_key")), nil
 	})
 
+	//check whether token is in blacklisted table
+
+	if Is_Blacklisted(parsedToken.Raw){
+
+		return *claims, fmt.Errorf("Blacklisted token")
+
+	}
 	//if token has expired
-	if claims.ExpiresAt.Before(time.Now().Add(59*time.Minute)) {
+	if claims.ExpiresAt.Before(time.Now().Add(3599*time.Second)) {
 
 		claims.ExpiresAt=jwt.NewNumericDate(time.Now().Add(1 * time.Hour))
 		//provide new token
@@ -244,9 +252,30 @@ func DecodeToken(w http.ResponseWriter,r *http.Request) (models.Claims, error) {
 		c.Value=NewTokenString
 		c.Expires=time.Now().Add(1*time.Hour)
 		http.SetCookie(w,c)
+		claims := &models.Claims{}
+
+		fmt.Println("new refresh cookie mila")
+
+		parsedToken, err := jwt.ParseWithClaims(c.Value, claims, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("error")
+			}
+			return []byte(os.Getenv("Jwt_key")), nil
+		})
+
+		
+		if parsedToken.Valid{
+
+			return *claims,nil
+		}else{
+
+			return *claims,err
+		}
+
+
 	}
 
-	if err != nil || !parsedToken.Valid || Is_Blacklisted(parsedToken.Raw){
+	if err != nil || !parsedToken.Valid {
 
 		// fmt.Println("fatt gya token parsing")
 		return *claims, fmt.Errorf("Invalid or expired token")
