@@ -11,13 +11,14 @@ import (
 	Res "main/Response"
 	"main/db"
 	"main/models"
+	"main/utils"
 	"net/http"
 	"os"
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	razorpay "github.com/razorpay/razorpay-go"
-	// "github.com/stripe/stripe-go/paymentintent"
+	
 )
 
 type Pagevar struct {
@@ -95,13 +96,14 @@ var paymentRes paymentresponse
 // @Param  details body string true "enter membership_name SchemaExample({ "membership_name":"Individual"})
 // @Tags User
 // @Success 200 {object} models.Response
-// @Router /makePayment [post]
+// @Router /make-payment [post]
 func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type", "application/json")
+	utils.SetHeader(w)
+
 
 	if r.Method != http.MethodPost {
-		// w.WriteHeader(http.StatusMethodNotAllowed)
+		
 		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
 		
 	}
@@ -125,46 +127,17 @@ func MakepaymentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	membership.Membership_name=membership_name
-	//get the billamount according to the plan selected by user(get it from r.body)
-	//take membership_name as input
-	//get the user_id from token
-
-	//token parsing to get user_id 
-	// parsedToken ,err := jwt.ParseWithClaims(r.Header["Token"][0] ,&models.Claims{}, func(token *jwt.Token) (interface{}, error) {
-						
-	// 	if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-	// 		return nil,fmt.Errorf("error")
-	// 	}
-	// 	return con.Jwt_key , nil
-	// })
-
-	// fmt.Println("token parsing hogyi")
-
-	// if claims, ok := parsedToken.Claims.(*models.Claims); ok && parsedToken.Valid {
-	// 	// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-	// 	fmt.Println("claims ki userid",claims)
-	// 	//user id milgyi
-	// 	user.User_id=claims.User_id
-	// } else {
-	// 	fmt.Println(err)
-	// 	Res.Response("Unauthorized",401,"token not valid","",w)
-	// }
-
-	if claims, err :=DecodeToken(w,r);err==nil && claims.Active{
-		// fmt.Printf("token will expire at :%v",  claims.ExpiresAt)
-		// fmt.Println("claims ki userid",claims)
-		
-		user.User_id=claims.User_id
-		
-		
-		
-	} else {
-		fmt.Println(err)
-		Res.Response("Unauthorized",401,err.Error(),"",w)
-
-	}
+	
 
 
+	userData := r.Context().Value("user")
+	
+	var userDetails models.Claims
+
+	userDetails=userData.(models.Claims)
+
+	user.User_id=userDetails.User_id
+	
 
 	
 	var payment models.Payments
@@ -217,7 +190,7 @@ func order_creation(user_id string,membership models.Memberships ,writer http.Re
 
 	
 // Template
-	t, err := template.ParseFiles("controllers/app.html")
+	t, err := template.ParseFiles("controllers/payment.html")
 	if err!=nil{
 		fmt.Println("template parsing error",err)
 	}
@@ -259,15 +232,15 @@ func Razorpay_Response(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// fmt.Println("header token",)
+
 
 	
 
-	// fmt.Println("Response body",string(body))
+	
 	var response PaymentStatusUpdate
 	json.Unmarshal(body, &response)
 	fmt.Println("")
-	// fmt.Println("response",response)
+
 	fmt.Println("id", response.Payload.Payment.Entity.ID)
 	fmt.Println("order_id",response.Payload.Payment.Entity.OrderID)
 	fmt.Println("amount", (response.Payload.Payment.Entity.Amount)/100)
@@ -334,10 +307,6 @@ func Razorpay_Response(w http.ResponseWriter, r *http.Request) {
 
 func VerifyWebhookSignature(body []byte, signature string, secret string) bool {
 
-	// body, err := ioutil.ReadAll(r.Body)
-	// if err != nil {
-	// 	return err
-	// }
 
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write(body)

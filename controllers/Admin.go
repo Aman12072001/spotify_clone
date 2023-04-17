@@ -7,76 +7,12 @@ import (
 	Res "main/Response"
 	"main/db"
 	"main/models"
-	con "main/utils"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/bogem/id3v2"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/golang-jwt/jwt/v4"
 )
-
-
-
-func Create_Admin(){
-
-
-	var admin models.User
-
-	admin.Role="admin"
-	admin.Name="aman-admin"
-	er:=db.DB.Create(&admin).Error
-	if er != nil {
-		fmt.Println("db error during admin creation")
-	}
-	
-}
-func GetToken(){
-
-	// jwt authentication token
-	
-	expirationTime := time.Now().Add(365* 24 * time.Hour)
-	fmt.Println("expiration time is: ", expirationTime)
-
-	// check if the user is valid then only create token
-
-	var user models.User
-	er:=db.DB.Where("role=?", "admin").First(&user).Error
-	if er != nil {
-		fmt.Println("db error ",er)
-	}
-	claims := models.Claims{
-
-		Role:user.Role,
-		User_id:user.User_id,
-		Active:true,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-		},
-	}
-	// fmt.Println("claims: ", claims)
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	fmt.Println("token: ", token)
-	tokenString, err := token.SignedString((con.Jwt_key))
-	if err != nil {
-		fmt.Println("error is :", err)
-		// w.WriteHeader(http.StatusInternalServerError)
-		
-	}
-	// fmt.Println("tokenString",tokenString)
-	user.Token=tokenString
-	user.LoggedIn=true
-	Er:=db.DB.Where("role=?", "admin").Updates(&user).Error
-	if Er!=nil{
-
-		fmt.Println("db error",Er)
-	}
-
-	
-}
-
 
 // @Description Add Song into app
 // @Accept json
@@ -84,7 +20,7 @@ func GetToken(){
 // @Param  details body string true "enter PATH of song SchemaExample({"path":"/home/chicmic/Downloads/"})
 // @Tags Admin
 // @Success 200 {object} models.Response
-// @Router /addSong [post]
+// @Router /add-song [post]
 func Add_Song(w http.ResponseWriter,r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
@@ -167,7 +103,7 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 		 Res.Response("Bad Request",400,er.Error(),"",w)
 		 return
 	 }
-	// fmt.Fprint(w,"Audio file saved to database")
+	
 
 	 Res.Response("Success",200,"Audio file saved to database","",w)
 	fmt.Println("Audio file saved to database")
@@ -182,7 +118,7 @@ func Add_Song(w http.ResponseWriter,r *http.Request) {
 // @Param  details body string true "enter Song id and path of thumbnail of song SchemaExample({"id":"xyz","img_path":"/"})
 // @Tags Admin
 // @Success 200 {object} models.Response
-// @Router /addImg [post]
+// @Router /add-img [post]
 func Add_Thumbnail_Img(w http.ResponseWriter,r * http.Request){
 
 
@@ -190,7 +126,7 @@ func Add_Thumbnail_Img(w http.ResponseWriter,r * http.Request){
 	//and img path
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
-		// w.WriteHeader(http.StatusMethodNotAllowed)
+		
 		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
 		
 	}
@@ -245,14 +181,14 @@ func Add_Thumbnail_Img(w http.ResponseWriter,r * http.Request){
 // @Param  details body string true "enter Song id and album name SchemaExample({"song_id":"xyz","album_name":"name"})
 // @Tags Admin
 // @Success 200 {object} models.Response
-// @Router /createAlbum [post]
+// @Router /create-album [post]
 func Create_Album(w http.ResponseWriter,r * http.Request){
 
 
 	//take the input song_id,album_name
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
-		// w.WriteHeader(http.StatusMethodNotAllowed)
+		
 		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
 		
 	}
@@ -296,7 +232,7 @@ func Create_Album(w http.ResponseWriter,r * http.Request){
 		
 	}
 
-	// fmt.Fprint(w,"Album created")
+	
 	Res.Response("OK",200,"Album created","",w)
 
 

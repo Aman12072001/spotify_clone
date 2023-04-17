@@ -10,7 +10,7 @@ import (
 )
 
 
-func IsAuthorized(endpoint func(http.ResponseWriter,*http.Request))http.Handler{
+func IsAuthorizedAdmin(endpoint func(http.ResponseWriter,*http.Request))http.Handler{
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
 

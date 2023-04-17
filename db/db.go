@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	mod "main/models"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	mod "main/models"
 )
 var DB *gorm.DB
 func Connect()error{
@@ -26,7 +27,12 @@ func Connect()error{
 
 	DB = db
 
+
+	//migrate admin in starting of app (if not already present)
+	Admin_Migration(db)
+
 	return nil
 
 
 }
+

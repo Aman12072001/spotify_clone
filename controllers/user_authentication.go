@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"main/db"
 	"main/models"
+	"main/utils"
 	con "main/utils"
 	"net/http"
 	"os"
@@ -38,7 +39,7 @@ func sendOtp(to string,w http.ResponseWriter) error {
 
 	
 	fmt.Println("to",to)
-	// fmt.Println("from constant",con.TWILIO_AUTH_TOKEN)
+	
 	fmt.Println("from env",os.Getenv("TWILIO_AUTH_TOKEN"))
 
 	resp, err := twilioClient.VerifyV2.CreateVerification(con.VERIFY_SERVICE_SID, params)
@@ -87,7 +88,8 @@ func checkOtp(to string, code string) bool {
 // @Router /verifyOtp [post]
 func VerifyOtp(w http.ResponseWriter,r * http.Request){
 
-	w.Header().Set("Content-Type", "application/json")
+	utils.SetHeader(w)
+
 	var otp = make(map[string]string)
 	json.NewDecoder(r.Body).Decode(&otp)
 	
@@ -109,9 +111,6 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 	var user models.User
 	db.DB.Where("contact_no=?",otp["phone"]).First(&user)
 	if checkOtp("+91"+otp["phone"], otp["otp"]) {
-		// w.Write([]byte("Phone Number verified sucessfully"))
-
-
 
 				// jwt authentication token
 				expirationTime := time.Now().Add(2 * time.Minute)
@@ -196,12 +195,7 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 
 }
 
-//email and password authentication
 
-// func HashPassword(password string) (string, error) {
-// 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-// 	return string(bytes), err
-// }
 
 func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
@@ -217,12 +211,6 @@ func User_login_with_Email(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 	json.NewDecoder(r.Body).Decode(&user)
 
-	
-
-
-
-
-
 
 
 }
@@ -235,7 +223,7 @@ func DecodeToken(w http.ResponseWriter,r *http.Request) (models.Claims, error) {
 	c, err := r.Cookie("token")
 	if err!= nil{
 
-		// Res.Response("Unauthorized",401,"cookie not found","",w)
+		
 		return *claims, err
 	}
 	parsedToken, err := jwt.ParseWithClaims(c.Value, claims, func(token *jwt.Token) (interface{}, error) {
@@ -286,7 +274,7 @@ func DecodeToken(w http.ResponseWriter,r *http.Request) (models.Claims, error) {
 
 	if err != nil || !parsedToken.Valid {
 
-		// fmt.Println("fatt gya token parsing")
+		
 		return *claims, fmt.Errorf("Invalid or expired token")
 	}
 

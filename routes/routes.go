@@ -7,7 +7,6 @@ import (
 	cont "main/controllers"
 	"main/db"
 	_ "main/docs"
-	"main/models"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -28,67 +27,43 @@ func Routes(){
 
 	}
 
-	if db.DB.Migrator().HasTable(&models.Memberships{}) {
-		var membership models.Memberships
-		
-		query := "SELECT memberships.membership_name, memberships.price FROM memberships;"
-		db.DB.Raw(query).Scan(&membership)
-		if membership.Membership_name=="" {
-			cont.Membership_Distribution()
-		}
-	}
-	if db.DB.Migrator().HasTable(&models.User{}){
 
-		//create admin
-		var admin models.User
-		query:="SELECT users.user_id FROM users WHERE role='admin'"
-		db.DB.Raw(query).Scan(&admin)
-		if admin.User_id==""{
-			//create admin 
-			cont.Create_Admin()
-			//give token to this admin
-			cont.GetToken()
-		}
-
-	}
 
 	//ADMIN
-	mux.Handle("/addSong",auth.IsAuthorized(cont.Add_Song))
-	mux.Handle("/addImg",auth.IsAuthorized(cont.Add_Thumbnail_Img))
-	mux.Handle("/createAlbum",auth.IsAuthorized(cont.Create_Album))
+	mux.Handle("/add-song",auth.IsAuthorizedAdmin(cont.Add_Song))
+	mux.Handle("/add-img",auth.IsAuthorizedAdmin(cont.Add_Thumbnail_Img))
+	mux.Handle("/create-album",auth.IsAuthorizedAdmin(cont.Create_Album))
 
 
 
 	//USER AUTHENTICATION
-	mux.HandleFunc("/userLogin",cont.User_login_with_contact_no)
-	mux.HandleFunc("/verifyOtp",cont.VerifyOtp)
-	mux.HandleFunc("/userLogout",cont.User_logOut)
+	mux.HandleFunc("/user-login",cont.User_login_with_contact_no)
+	mux.HandleFunc("/verify-otp",cont.VerifyOtp)
+	mux.Handle("/user-logout",auth.IsAuthorizedUser(cont.User_logOut))
 
 	//create playlist
-	mux.HandleFunc("/createPlaylist",cont.CreatePlaylist)
+	mux.Handle("/create-playlist",auth.IsAuthorizedUser(cont.CreatePlaylist))
+	mux.Handle("/show-playlist",auth.IsAuthorizedUser(cont.Show_playlist))
 
-	//user profile
-	mux.HandleFunc("/updateProfile",cont.UpdateProfile)
 
 	//Songs
-	mux.HandleFunc("/getSong",cont.GetSong)
-	mux.HandleFunc("/showPlaylist",cont.Show_playlist)
-	mux.HandleFunc("/getAllSongs",cont.Get_All_Songs)
-	mux.HandleFunc("/addFavSong",cont.Add_song_toFav)
-	mux.HandleFunc("/addToRecentlyPlayed",cont.Add_to_RecentlyPlayed)
-	mux.HandleFunc("/getRecentlyPlayedList",cont.Get_Recently_Played_Songs)
-	mux.HandleFunc("/getAlbum",cont.Get_Album)
-
-	mux.HandleFunc("/searchSongs",cont.Search_Song)
+	mux.HandleFunc("/get-song",cont.GetSong)
+	mux.HandleFunc("/get-allSongs",cont.Get_All_Songs)
+	mux.Handle("/add-fav-song",auth.IsAuthorizedUser(cont.Add_song_toFav))
+	mux.Handle("/add-to-recentlyPlayed",auth.IsAuthorizedUser(cont.Add_to_RecentlyPlayed))
+	mux.Handle("/get-recently-playedList",auth.IsAuthorizedUser(cont.Get_Recently_Played_Songs))
+	mux.HandleFunc("/get-album",cont.Get_Album)
+	mux.HandleFunc("/search-songs",cont.Search_Song)
 
 	//Get artist
-	mux.HandleFunc("/getArtist",cont.Get_Artist)
+	mux.HandleFunc("/get-artist",cont.Get_Artist)
 	
 	//create payment
-	mux.HandleFunc("/makePayment",cont.MakepaymentHandler)
-	mux.HandleFunc("/razorpayResponse",cont.Razorpay_Response)
+	mux.Handle("/make-payment",auth.IsAuthorizedUser(cont.MakepaymentHandler))
+	mux.HandleFunc("/razorpay-response",cont.Razorpay_Response)
 	
 
+	//Swagger handler
 	mux.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 
 
