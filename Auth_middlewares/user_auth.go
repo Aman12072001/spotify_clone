@@ -14,7 +14,7 @@ func IsAuthorizedUser(endpoint func(http.ResponseWriter,*http.Request))http.Hand
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
 
-		claims,err:=cont.DecodeToken(w,r)
+		claims,err:=cont.DecodeToken(w,r,"token")
 		
 		if claims.Valid()==nil{
 
@@ -25,7 +25,7 @@ func IsAuthorizedUser(endpoint func(http.ResponseWriter,*http.Request))http.Hand
 		}
 		if err!=nil{
 
-			Resp.Response("OK",200,"token provided successfully","",w)
+			Resp.Response("Unauthorized",401,"Not a valid user ","",w)
 			
 		}
 	

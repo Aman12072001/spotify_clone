@@ -51,6 +51,7 @@ type Claims struct{
 	User_id string `json:"user_id"`
 	Role string `json:"role"`
 	Active bool `json:"active"`
+	Email string `json:"email"`
 	jwt.RegisteredClaims
 		
 }

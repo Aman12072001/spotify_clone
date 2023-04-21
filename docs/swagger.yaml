@@ -16,20 +16,7 @@ info:
   title: Spotify API
   version: 1.0.0
 paths:
-  /addFavSong:
-    get:
-      consumes:
-      - application/json
-      description: Add your Fav. Song with this api
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-      tags:
-      - User
+  /add-fav-song:
     post:
       consumes:
       - application/json
@@ -51,7 +38,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /addImg:
+  /add-img:
     post:
       consumes:
       - application/json
@@ -73,7 +60,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - Admin
-  /addSong:
+  /add-song:
     post:
       consumes:
       - application/json
@@ -95,7 +82,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - Admin
-  /addToRecentlyPlayed:
+  /add-to-recentlyPlayed:
     post:
       consumes:
       - application/json
@@ -117,7 +104,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /createAlbum:
+  /create-album:
     post:
       consumes:
       - application/json
@@ -139,7 +126,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - Admin
-  /createPlaylist:
+  /create-playlist:
     post:
       consumes:
       - application/json
@@ -161,7 +148,19 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /getAlbum:
+  /get-AllSongs:
+    get:
+      description: Get all song
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /get-album:
     post:
       consumes:
       - application/json
@@ -183,19 +182,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /getAllSongs:
-    get:
-      description: Get all song
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-      tags:
-      - User
-  /getArtist:
+  /get-artist:
     post:
       consumes:
       - application/json
@@ -217,7 +204,21 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /getRecentlyPlayedList:
+  /get-fav-song:
+    get:
+      consumes:
+      - application/json
+      description: Add your Fav. Song with this api
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+      tags:
+      - User
+  /get-recently-playedList:
     get:
       consumes:
       - application/json
@@ -231,7 +232,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /getSong:
+  /get-song:
     post:
       consumes:
       - application/json
@@ -253,7 +254,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /makePayment:
+  /make-payment:
     post:
       consumes:
       - application/json
@@ -275,7 +276,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /searchSongs:
+  /search-songs:
     post:
       consumes:
       - application/json
@@ -297,7 +298,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /showPlaylist:
+  /show-playlist:
     get:
       description: Show existing playlist
       produces:
@@ -309,21 +310,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /updateProfile:
-    put:
-      consumes:
-      - application/json
-      description: Update profile
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/models.Response'
-      tags:
-      - User
-  /userLogin:
+  /user-login-contact:
     post:
       consumes:
       - application/json
@@ -345,7 +332,7 @@ paths:
             $ref: '#/definitions/models.Response'
       tags:
       - User
-  /userLogout:
+  /user-logout:
     get:
       description: User logout
       produces:

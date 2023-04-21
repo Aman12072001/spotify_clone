@@ -1,12 +1,9 @@
 package auth
 
 import (
-	"fmt"
-	"main/models"
-	cons "main/utils"
+	Resp "main/Response"
+	cont "main/controllers"
 	"net/http"
-
-	jwt "github.com/golang-jwt/jwt"
 )
 
 
@@ -14,31 +11,24 @@ func IsAuthorizedAdmin(endpoint func(http.ResponseWriter,*http.Request))http.Han
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
 
-		if r.Header["Token"] != nil {
 
-			token,err:=jwt.ParseWithClaims(r.Header["Token"][0],&models.Claims{},func(token *jwt.Token) (interface{},error){
+		claims,err:=cont.DecodeToken(w,r,"token")
 
-				if _,ok:=token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil,fmt.Errorf("error")
-				}
-				return cons.Jwt_key,nil
-			})
+		if claims.Valid()==nil{
 
+			
+			// mpData := r.Context().Value("editUser")
+			endpoint(w, r)
 
-			if claims, ok := token.Claims.(*models.Claims); ok && token.Valid {
-				
-				if claims.Role=="admin"{
+		}
+		if err!=nil{
 
-					endpoint(w,r)
-				}
-			} else {
-				fmt.Println(err)
-			}
+			Resp.Response("Unauthorized",401,"Not a valid admin","",w)
+			
+		}
+	
 
-	}else{
-
-		fmt.Fprint(w,"NOt authorized")
-	}
+	
 	
 	})
 }	

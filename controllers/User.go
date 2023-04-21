@@ -1,19 +1,424 @@
 package cont
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	Res "main/Response"
 	"main/db"
 	"main/models"
 	"main/utils"
+	con "main/utils"
 	"net/http"
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	jwt "github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
+	gomail "gopkg.in/mail.v2"
 )
+
+
+
+func User_SignUp(w http.ResponseWriter,r *http.Request){
+
+	utils.SetHeader(w)
+	
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+
+		return
+	}  
+	
+
+	
+	input :=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+	
+	err := validation.Validate(input,
+		validation.Map(
+			// Name cannot be empty, and the length must be between 5 and 20.
+			validation.Key("email", validation.Required, is.Email,),
+			
+			validation.Key("create_password",validation.Required,validation.Length(8, 16),),
+
+			validation.Key("contact",validation.Required),
+			
+		),
+	)
+	
+	if err!=nil{
+
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}
+
+	//if email already exists 
+	query:="select exists(select * from users where email='"+input["email"]+"');"
+	var user_exists bool
+	db.DB.Raw(query).Scan(&user_exists)
+	if user_exists{
+
+		Res.Response("Bad Request",400,"email already exists","",w)
+
+	}else{
+		//create db entry for signup input
+		var user models.User
+		user.Email=input["email"]
+		user.Password,_=HashPassword(input["create_password"])
+		user.Contact_no=input["contact"]
+		er:=db.DB.Create(&user).Error
+		if er!=nil{
+			Res.Response("Server error",500,er.Error(),"",w)
+			return
+		}
+		Res.Response("Success",200,"user sign up complete","",w)
+
+
+	}
+
+	
+
+
+	//redirect to login page 
+
+
+}
+
+
+func Forgot_Password(w http.ResponseWriter, r *http.Request){
+
+
+	utils.SetHeader(w)
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+
+		return
+	} 
+
+
+	input :=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+
+	err := validation.Validate(input,
+		validation.Map(
+			//contact number must be between 8-10 digits.
+			validation.Key("email",validation.Required,is.Email),
+			
+		),
+	)
+	
+	if err!=nil{
+
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}
+
+	//check whether the email exists in the database
+	query:="select exists(select * from users where email='"+input["email"]+"');"
+
+	var emailExists bool
+
+	db.DB.Raw(query).Scan(&emailExists)
+
+	if emailExists{
+
+			//give cookie with email in claims
+			claims :=models.Claims{ Role:"forgotuser",Email: input["email"]}
+			forgotuserToken:=GenerateNewToken(&claims)
+			cookie:=&http.Cookie{Name:"forgotuser_cookie",Value:forgotuserToken}
+			http.SetCookie(w,cookie)
+			fmt.Println("claims email",claims.Email)
+
+		//send the otp or link on email
+		SendEmail(input["email"])
+		Res.Response("Sucess",200,"Email Sent","",w)
+		
+
+		fmt.Println("cookie forgotuser is set")
+		//----------------------------------//
+
+	}else{
+
+		Res.Response("Bad Request",400,"Unknown email address","",w)
+		return
+	}
+
+
+
+
+
+}
+
+func SendEmail(toEmail string){
+
+
+	m := gomail.NewMessage()
+
+	// Set E-Mail sender
+	m.SetHeader("From", "amantarar01@gmail.com")
+  
+	// Set E-Mail receivers
+	m.SetHeader("To", toEmail)
+  
+	// Set E-Mail subject
+	m.SetHeader("Subject", "Gomail test subject")
+  
+	// Set E-Mail body. You can set plain text or html with text/html
+	m.SetBody("text/html", ` <html>
+  
+	<body>
+	
+	<button class="button button1">Green</button>
+	<br>
+	<button class="button button2">Blue</button>
+	<br>
+	<a href="http://localhost:8000/user-register">Go to user register (Create new password)</a> 
+	<br>
+	
+	</body>
+	</html>`)
+  
+	// Settings for SMTP server
+	d := gomail.NewDialer("smtp.gmail.com", 587, "amantarar01@gmail.com", "mdyrprmdvxpfxjjp")
+  
+	// This is only needed when SSL/TLS certificate is not valid on server.
+	// In production this should be set to false.
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+  
+	// Now send E-Mail
+	if err := d.DialAndSend(m); err != nil {
+	  fmt.Println(err)
+	  panic(err)
+	}
+  
+	return
+}
+
+
+
+
+
+func Create_new_password(w http.ResponseWriter, r *http.Request){
+
+	fmt.Println("sdfmsdfm")
+	claims,_:=DecodeToken(w,r,"forgotuser_cookie")
+
+	fmt.Println("claims",claims)
+	fmt.Println("helooooooooooo")
+
+
+
+	utils.SetHeader(w)
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+
+		return
+	}  
+
+	input :=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+	
+	err := validation.Validate(input,
+		validation.Map(
+			
+			
+			validation.Key("new_password",validation.Required,validation.Length(8, 16),),
+
+			validation.Key("confirm_new_password",validation.Required,validation.Length(8, 16),),
+
+			
+		),
+	)
+	
+	if err!=nil{
+
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}else if input["new_password"]!=input["confirm_new_password"]{
+
+
+		Res.Response("Bad Request",400,"Password not matching","",w)
+		return
+	}
+
+	//change the users password to new password
+
+	var user models.User
+	fmt.Println("input email",input["email"])
+	err1:=db.DB.Where("email=?",claims.Email).First(&user).Error
+	if err1!=nil{
+		Res.Response("Server error",500,err1.Error(),"",w)
+		return
+
+	}
+	fmt.Println("user old",user)
+
+	user.Password,_=HashPassword(input["confirm_new_password"])   
+
+	fmt.Println("user new",user)
+
+	fmt.Println("claims.email",claims.Email)         
+	er:=db.DB.Where("email=?",claims.Email).Updates(&user).Error
+	if er!=nil{
+		Res.Response("Server error",500,er.Error(),"",w)
+		return
+
+	}
+
+
+	Res.Response("Success",200,"Password Set Successfully","",w)
+
+
+
+}
+
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+
+
+
+
+
+func User_login_with_password(w http.ResponseWriter, r *http.Request){
+
+	utils.SetHeader(w)
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+
+		return
+	}  
+
+
+	input :=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+	
+	err := validation.Validate(input,
+		validation.Map(
+			// Name cannot be empty, and the length must be between 5 and 20.
+			validation.Key("email", validation.Required, is.Email),
+			
+			validation.Key("password",validation.Required,validation.Length(8, 16),),
+			
+		),
+	)
+	
+	if err!=nil{
+
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}
+
+
+	var user models.User
+
+	er:=db.DB.Where("email = ?", input["email"]).First(&user).Error
+
+	if er!=nil{
+		Res.Response("Server error ",500,"email not present","",w)
+
+	}
+	fmt.Println("password input",input["password"])
+	
+
+
+	
+	fmt.Println("password in db",user.Password)
+	
+	er1 := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input["password"]))
+
+	if er1==nil{
+
+		//give user its cookie with token
+
+			// jwt authentication token
+			expirationTime := time.Now().Add(2 * time.Minute)
+			fmt.Println("expiration time is: ", expirationTime)
+	
+			// check if the user is valid then only create token
+			claims := models.Claims{
+				Phone: user.Contact_no,
+				User_id:user.User_id,
+				Active:true,
+				RegisteredClaims: jwt.RegisteredClaims{
+					ExpiresAt: jwt.NewNumericDate(expirationTime),
+				},
+			}
+			fmt.Println("claims: ", claims)
+	
+			token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+			fmt.Println("token: ", token)
+
+			tokenString, err := token.SignedString((con.Jwt_key))
+
+			if err != nil {
+				fmt.Println("error is :", err)
+				w.WriteHeader(http.StatusInternalServerError)
+			Res.Response("Bad gateway",500,err.Error(),"",w)
+				}
+			fmt.Println("tokenString",tokenString)
+			
+			
+				//put this token in a cookie
+
+				http.SetCookie(w, &http.Cookie{
+					Name:    "token",
+					Value:   tokenString,
+					HttpOnly: true,
+					Expires: expirationTime.Add(8*time.Hour),
+				})
+			
+				fmt.Println("cookie set hua")
+			
+			if err != nil {
+				
+				
+				// response.Message="Invalid or expired token"
+				Res.Response("unauthorized",401,"Invalid or expired token","",w)
+
+				
+				fmt.Println("invalid token",err)
+			
+			}
+			//after the token is provided
+	
+	
+				user.Token=tokenString
+				user.LoggedIn=claims.Active
+			
+			
+			fmt.Println("token provided successfully")
+			Res.Response("OK",200,"token provided successfully AND PHONE NUMBER VERIFIED","",w)
+			
+
+
+	}else {
+		// w.Write([]byte("Verifictaion failed"))
+		fmt.Println("verification failed")
+		
+		Res.Response("Unauthorized",401,er1.Error()+"Password wrong or user not present","",w)
+	}
+
+	
+
+
+
+}
+
+
+
 
 // @Description User login with name and contact_no
 // @Accept json
@@ -21,7 +426,7 @@ import (
 //  @Param  details body string true "name and contact number" SchemaExample({"name":"john doe","contact":"1234567890"})
 // @Tags User
 // @Success 200 {object} models.Response
-// @Router /user-login [post]
+// @Router /user-login-contact [post]
 func User_login_with_contact_no(w http.ResponseWriter,r *http.Request){
 
 	
@@ -46,9 +451,7 @@ func User_login_with_contact_no(w http.ResponseWriter,r *http.Request){
 	
 	err := validation.Validate(input,
 		validation.Map(
-			// Name cannot be empty, and the length must be between 5 and 20.
-			validation.Key("name", validation.Required, validation.Length(3, 20)),
-			
+			//contact number must be between 8-10 digits.
 			validation.Key("contact",validation.Required,validation.Length(8, 10),is.Digit,),
 			
 		),
@@ -64,7 +467,7 @@ func User_login_with_contact_no(w http.ResponseWriter,r *http.Request){
 
 	var user models.User
 	user.Contact_no=input["contact"]
-	user.Name=input["name"]
+	
 
 
 		//IF ALREADY EXISTS JUST UPDATE THE TOKEN OTHERWISE CREATE NEW USER
@@ -98,10 +501,15 @@ func User_login_with_contact_no(w http.ResponseWriter,r *http.Request){
 
 }
 
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
-}
+
+
+
+
+
+
+
+
+
 
 
 // @Description User logout

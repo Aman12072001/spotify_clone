@@ -16,27 +16,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/addFavSong": {
-            "get": {
-                "description": "Add your Fav. Song with this api",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            },
+        "/add-fav-song": {
             "post": {
                 "description": "Add your Fav. Song with this api",
                 "consumes": [
@@ -70,7 +50,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/addImg": {
+        "/add-img": {
             "post": {
                 "description": "Add Thumbnail for Song",
                 "consumes": [
@@ -104,7 +84,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/addSong": {
+        "/add-song": {
             "post": {
                 "description": "Add Song into app",
                 "consumes": [
@@ -138,7 +118,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/addToRecentlyPlayed": {
+        "/add-to-recentlyPlayed": {
             "post": {
                 "description": "Add to Recently_Played list",
                 "consumes": [
@@ -172,7 +152,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/createAlbum": {
+        "/create-album": {
             "post": {
                 "description": "Create Album",
                 "consumes": [
@@ -206,7 +186,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/createPlaylist": {
+        "/create-playlist": {
             "post": {
                 "description": "Create playlist",
                 "consumes": [
@@ -240,7 +220,26 @@ const docTemplate = `{
                 }
             }
         },
-        "/getAlbum": {
+        "/get-AllSongs": {
+            "get": {
+                "description": "Get all song",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/get-album": {
             "post": {
                 "description": "Get Album",
                 "consumes": [
@@ -274,26 +273,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/getAllSongs": {
-            "get": {
-                "description": "Get all song",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/getArtist": {
+        "/get-artist": {
             "post": {
                 "description": "Get Artist",
                 "consumes": [
@@ -327,7 +307,29 @@ const docTemplate = `{
                 }
             }
         },
-        "/getRecentlyPlayedList": {
+        "/get-fav-song": {
+            "get": {
+                "description": "Add your Fav. Song with this api",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/get-recently-playedList": {
             "get": {
                 "description": "Get Recently_Played list",
                 "consumes": [
@@ -349,7 +351,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/getSong": {
+        "/get-song": {
             "post": {
                 "description": "Get song by id",
                 "consumes": [
@@ -383,7 +385,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/makePayment": {
+        "/make-payment": {
             "post": {
                 "description": "Initiate Payment",
                 "consumes": [
@@ -417,7 +419,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/searchSongs": {
+        "/search-songs": {
             "post": {
                 "description": "Search Song by name",
                 "consumes": [
@@ -451,7 +453,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/showPlaylist": {
+        "/show-playlist": {
             "get": {
                 "description": "Show existing playlist",
                 "produces": [
@@ -470,29 +472,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/updateProfile": {
-            "put": {
-                "description": "Update profile",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/userLogin": {
+        "/user-login-contact": {
             "post": {
                 "description": "User login with name and contact_no",
                 "consumes": [
@@ -526,7 +506,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/userLogout": {
+        "/user-logout": {
             "get": {
                 "description": "User logout",
                 "produces": [

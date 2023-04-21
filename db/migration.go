@@ -2,11 +2,13 @@ package db
 
 import (
 	"fmt"
+
 	"main/models"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -57,6 +59,10 @@ func Membership_Distribution(db *gorm.DB){
 
 }
 
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
 
 func Create_Admin(db *gorm.DB){
 
@@ -65,6 +71,7 @@ func Create_Admin(db *gorm.DB){
 
 	admin.Role="admin"
 	admin.Name="aman-admin"
+	admin.Password,_= HashPassword("12345")    
 	er:=db.Create(&admin).Error
 	if er != nil {
 		fmt.Println("db error during admin creation")

@@ -37,9 +37,14 @@ func Routes(){
 
 
 	//USER AUTHENTICATION
-	mux.HandleFunc("/user-login",cont.User_login_with_contact_no)
+	mux.HandleFunc("/user-login-contact",cont.User_login_with_contact_no)
 	mux.HandleFunc("/verify-otp",cont.VerifyOtp)
 	mux.Handle("/user-logout",auth.IsAuthorizedUser(cont.User_logOut))
+	mux.HandleFunc("/user-register",cont.User_SignUp)
+	mux.HandleFunc("/user-login-email",cont.User_login_with_password)
+	mux.HandleFunc("/forgot-password",cont.Forgot_Password)
+	mux.HandleFunc("/create-new-password",(cont.Create_new_password))
+
 
 	//create playlist
 	mux.Handle("/create-playlist",auth.IsAuthorizedUser(cont.CreatePlaylist))

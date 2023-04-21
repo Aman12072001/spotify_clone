@@ -7,12 +7,86 @@ import (
 	Res "main/Response"
 	"main/db"
 	"main/models"
+	"main/utils"
 	"net/http"
 	"os"
 
 	"github.com/bogem/id3v2"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"golang.org/x/crypto/bcrypt"
 )
+
+
+
+
+func Admin_login(w http.ResponseWriter,r *http.Request){
+
+	utils.SetHeader(w)
+
+	if r.Method != http.MethodPost {
+		// w.WriteHeader(http.StatusMethodNotAllowed)
+		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
+		return
+	}
+
+	input:=make(map[string]string)
+	json.NewDecoder(r.Body).Decode(&input)
+	err := validation.Validate(input,
+		validation.Map(
+			// song_path cannot be empty
+			
+			validation.Key("email",validation.Required,is.Email),
+			validation.Key("password",validation.Required),
+			
+		),
+	)
+	
+	if err!=nil{
+
+		Res.Response("Bad Request",400,err.Error(),"",w)
+		return
+	}
+
+
+	var admin models.User
+
+	er:=db.DB.Where("email=?",input["email"]).Find(&admin).Error
+	if er!=nil{
+
+		Res.Response("Server error",500,er.Error(),"",w)
+	}
+	
+	er1 := bcrypt.CompareHashAndPassword([]byte(admin.Password), []byte(input["password"]))
+	if er1!=nil{
+
+		Res.Response("Unathorized",401,"Invalid Password","",w)
+		return
+	}else{
+
+		//give admin access cookie
+
+		claims:=models.Claims{Role: "admin"}
+		adminToken:=GenerateNewToken(&claims)
+		cookie:=&http.Cookie{ Name:"token",Value: adminToken}
+
+		http.SetCookie(w,cookie)
+
+		Res.Response("OK",200,"admin login success","",w)
+	}
+
+
+}
+
+
+
+
+
+
+
+
+
+
 
 // @Description Add Song into app
 // @Accept json
@@ -23,14 +97,14 @@ import (
 // @Router /add-song [post]
 func Add_Song(w http.ResponseWriter,r *http.Request) {
 
-	w.Header().Set("Content-Type", "application/json")
+	utils.SetHeader(w)
 
 	if r.Method != http.MethodPost {
 		// w.WriteHeader(http.StatusMethodNotAllowed)
 		Res.Response("Method Not Allowed ",405,"use correct http method","",w)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+	
 
 	//takes audiofile path from r.body
 

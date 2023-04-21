@@ -18,7 +18,6 @@ import (
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/twilio/twilio-go"
 	openapi "github.com/twilio/twilio-go/rest/verify/v2"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var twilioClient *twilio.RestClient
@@ -197,34 +196,20 @@ func VerifyOtp(w http.ResponseWriter,r * http.Request){
 
 
 
-func CheckPasswordHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
-}
-
-func User_login_with_Email(w http.ResponseWriter, r *http.Request) {
-
-
-	
-	w.Header().Set("Content-Type", "application/json")
-
-	var user models.User
-	json.NewDecoder(r.Body).Decode(&user)
 
 
 
-}
 
 
 
-func DecodeToken(w http.ResponseWriter,r *http.Request) (models.Claims, error) {
-	
+func DecodeToken(w http.ResponseWriter,r *http.Request,cookieName string) (*models.Claims, error) {
+	fmt.Println("decode token called")
 	claims := &models.Claims{}
-	c, err := r.Cookie("token")
+	c, err := r.Cookie(cookieName)
+	fmt.Println("cookie value is:",c.Value)
 	if err!= nil{
 
-		
-		return *claims, err
+		return nil, err
 	}
 	parsedToken, err := jwt.ParseWithClaims(c.Value, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -237,50 +222,43 @@ func DecodeToken(w http.ResponseWriter,r *http.Request) (models.Claims, error) {
 
 	if Is_Blacklisted(parsedToken.Raw){
 
-		return *claims, fmt.Errorf("Blacklisted token")
+		return nil, fmt.Errorf("Blacklisted token")
 
 	}
+	fmt.Println("claims is",claims)
 	//if token has expired
-	if claims.ExpiresAt.Before(time.Now().Add(3599*time.Second)) {
+	// if claims.ExpiresAt.Before(time.Now().Add(3599*time.Second)) {
 
-		claims.ExpiresAt=jwt.NewNumericDate(time.Now().Add(1 * time.Hour))
-		//provide new token
-		NewTokenString:=GenerateNewToken(claims)
-		c.Value=NewTokenString
-		c.Expires=time.Now().Add(1*time.Hour)
-		http.SetCookie(w,c)
-		claims := &models.Claims{}
+	// 	claims.ExpiresAt=jwt.NewNumericDate(time.Now().Add(1 * time.Hour))
+	// 	//provide new token
+	// 	NewTokenString:=GenerateNewToken(claims)
+	// 	c.Value=NewTokenString
+	// 	c.Expires=time.Now().Add(1*time.Hour)
+	// 	http.SetCookie(w,c)
+	// 	claims := &models.Claims{}
 
-		fmt.Println("new refresh cookie mila")
+	// 	fmt.Println("new refresh cookie mila")
 
-		parsedToken, err := jwt.ParseWithClaims(c.Value, claims, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("error")
-			}
-			return []byte(os.Getenv("Jwt_key")), nil
-		})
-
-		
-		if parsedToken.Valid{
-
-			return *claims,nil
-		}else{
-
-			return *claims,err
-		}
-
-
-	}
-
-	if err != nil || !parsedToken.Valid {
+	// 	parsedToken, err := jwt.ParseWithClaims(c.Value, claims, func(token *jwt.Token) (interface{}, error) {
+	// 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 			return nil, fmt.Errorf("error")
+	// 		}
+	// 		return []byte(os.Getenv("Jwt_key")), nil
+	// 	})
 
 		
-		return *claims, fmt.Errorf("Invalid or expired token")
-	}
+	// 	if parsedToken.Valid{
+
+	// 		return claims,nil
+	// 	}else{
+
+	// 		return nil,err
+	// 	}
 
 
+	// }
 
-	return *claims, nil
+	return claims, nil
 }
 
 func Is_Blacklisted(token string)bool{
