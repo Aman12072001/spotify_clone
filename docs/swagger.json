@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.0.0"
     },
-    "host": "localhost:8000",
+    "host": "13.233.130.222:3001",
     "paths": {
         "/add-fav-song": {
             "post": {

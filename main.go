@@ -13,7 +13,7 @@ import (
 // @title Spotify API
 // @version 1.0.0
 // @description API Documentation for Spotify
-// @host localhost:8000
+// @host 13.233.130.222:3001
 func main(){
 
 

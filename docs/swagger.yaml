@@ -9,7 +9,7 @@ definitions:
       status:
         type: string
     type: object
-host: localhost:8000
+host: 13.233.130.222:3001
 info:
   contact: {}
   description: API Documentation for Spotify

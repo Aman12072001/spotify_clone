@@ -18,7 +18,7 @@ import (
 func Routes(){
 
 	
-	fmt.Println("Listening on port:8000")
+	fmt.Println("Listening on port:3001")
 	mux := mux.NewRouter()
 
 	err := db.Connect()
@@ -27,7 +27,8 @@ func Routes(){
 
 	}
 
-
+	// cors middleware
+	mux.Use(auth.CORSMiddleware)
 
 	//ADMIN
 	mux.Handle("/add-song",auth.IsAuthorizedAdmin(cont.Add_Song))
@@ -73,6 +74,6 @@ func Routes(){
 
 
 
-	log.Fatal(http.ListenAndServe(":8000", mux))
+	log.Fatal(http.ListenAndServe(":3001", mux))
 
 }
