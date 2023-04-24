@@ -177,7 +177,7 @@ func SendEmail(toEmail string){
 	<br>
 	<button class="button button2">Blue</button>
 	<br>
-	<a href="http://localhost:8000/user-register">Go to user register (Create new password)</a> 
+	<a href="http://localhost:3001/user-register">(Create new password)</a> 
 	<br>
 	
 	</body>
